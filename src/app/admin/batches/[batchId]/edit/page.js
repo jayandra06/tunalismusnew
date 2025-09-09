@@ -21,6 +21,7 @@ export default function EditBatchPage() {
   const router = useRouter();
   const params = useParams();
   const [batch, setBatch] = useState(null);
+  const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -44,6 +45,7 @@ export default function EditBatchPage() {
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'admin') {
       fetchBatch();
+      fetchEnrollments();
     } else if (status === 'unauthenticated') {
       router.push('/admin/login');
     }
@@ -89,6 +91,27 @@ export default function EditBatchPage() {
       setError(`Network error: ${error.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEnrollments = async () => {
+    try {
+      const response = await fetch(`/api/admin/enrollments?batchId=${params.batchId}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setEnrollments(data.enrollments || []);
+      } else {
+        console.error('Failed to fetch enrollments');
+      }
+    } catch (error) {
+      console.error('Error fetching enrollments:', error);
     }
   };
 
@@ -549,6 +572,40 @@ export default function EditBatchPage() {
                 </div>
                 <span className="text-sm font-semibold">{batch.batchNumber}</span>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Enrolled Students</CardTitle>
+              <CardDescription>Students assigned to this batch</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {enrollments.length > 0 ? (
+                <div className="space-y-3">
+                  {enrollments.map((enrollment) => (
+                    <div key={enrollment._id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <div>
+                        <p className="font-semibold text-sm">{enrollment.student?.name || 'Unknown Student'}</p>
+                        <p className="text-xs text-gray-600">{enrollment.student?.email || ''}</p>
+                      </div>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        enrollment.status === 'enrolled' ? 'bg-green-100 text-green-800' :
+                        enrollment.status === 'active' ? 'bg-blue-100 text-blue-800' :
+                        enrollment.status === 'completed' ? 'bg-gray-100 text-gray-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {enrollment.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">No students enrolled yet</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

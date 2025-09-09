@@ -35,11 +35,13 @@ export async function GET(req) {
     const limit = parseInt(searchParams.get('limit')) || 10;
     const status = searchParams.get('status');
     const courseId = searchParams.get('courseId');
+    const batchId = searchParams.get('batchId');
 
     // Build filter object
     const filter = {};
     if (status) filter.status = status;
     if (courseId) filter.course = courseId;
+    if (batchId) filter.batch = batchId;
 
     // Calculate skip value for pagination
     const skip = (page - 1) * limit;

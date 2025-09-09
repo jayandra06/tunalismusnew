@@ -102,7 +102,7 @@ export async function POST(req) {
     const availableBatches = await Batch.find({
       course: updatedPayment.course._id,
       status: { $in: ['upcoming', 'active'] },
-      $expr: { $lt: [{ $size: "$students" }, "$maxStudents"] }
+      $expr: { $lt: ["$currentStudents", "$maxStudents"] }
     }).sort({ startDate: 1 });
 
     // Assign to first available batch or create a new one if none exist
@@ -110,7 +110,7 @@ export async function POST(req) {
     if (availableBatches.length > 0) {
       assignedBatch = availableBatches[0];
       // Add student to batch
-      assignedBatch.students.push(actualUser._id);
+      assignedBatch.currentStudents += 1;
       await assignedBatch.save();
     }
 

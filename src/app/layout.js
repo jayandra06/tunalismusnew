@@ -2,6 +2,7 @@ import { Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 import NextAuthSessionProvider from "@/components/providers/session-provider";
+import Script from "next/script";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -49,13 +50,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          src="https://checkout.razorpay.com/v1/checkout.js"
-          async
-        ></script>
-      </head>
       <body className={`${bricolage.className} antialiased`} suppressHydrationWarning>
+        <Script
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          strategy="afterInteractive"
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

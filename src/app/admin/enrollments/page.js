@@ -678,8 +678,9 @@ export default function EnrollmentsPage() {
                                 variant="outline" 
                                 size="sm" 
                                 className="text-blue-600 hover:text-blue-700"
-                                onClick={() => handleAssignBatch(enrollment.course._id, enrollment._id)}
+                                onClick={() => enrollment.course ? handleAssignBatch(enrollment.course._id, enrollment._id) : null}
                                 title="Assign Batch"
+                                disabled={!enrollment.course}
                               >
                                 Assign Batch
                               </Button>
@@ -691,7 +692,11 @@ export default function EnrollmentsPage() {
                                   </div>
                                 </div>
                                 <div className="max-h-48 overflow-y-auto">
-                                  {loadingBatches[enrollment.course._id] ? (
+                                  {!enrollment.course ? (
+                                    <div className="p-3 text-center text-sm text-red-500 dark:text-red-400">
+                                      Course not found
+                                    </div>
+                                  ) : loadingBatches[enrollment.course._id] ? (
                                     <div className="p-3 text-center text-sm text-gray-500 dark:text-gray-400">
                                       Loading batches...
                                     </div>

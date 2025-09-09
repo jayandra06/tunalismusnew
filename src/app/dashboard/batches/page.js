@@ -165,8 +165,8 @@ export default function BatchesPage() {
               : batches.map((batch) => (
                   <TableRow key={batch._id}>
                     <TableCell>{batch.name}</TableCell>
-                    <TableCell>{batch.course.title}</TableCell>
-                    <TableCell>{batch.trainer.name}</TableCell>
+                    <TableCell>{batch.course?.title || 'Unknown Course'}</TableCell>
+                    <TableCell>{batch.trainer?.name || 'Unassigned'}</TableCell>
                     <TableCell>
                       {new Date(batch.startDate).toLocaleDateString()}
                     </TableCell>

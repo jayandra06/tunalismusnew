@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -20,9 +20,18 @@ import Link from "next/link";
 export default function StudentLayout({ children }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Skip authentication checks for login page
+  const isLoginPage = pathname === '/student/login';
+
   useEffect(() => {
+    // Skip auth checks if we're on the login page
+    if (isLoginPage) {
+      return;
+    }
+
     if (status === 'loading') {
       return; // Wait for auth to load
     }
@@ -36,7 +45,7 @@ export default function StudentLayout({ children }) {
       router.push("/unauthorized");
       return;
     }
-  }, [session, status, router]);
+  }, [session, status, router, isLoginPage]);
 
   const handleLogout = () => {
     signOut({ callbackUrl: '/' });
@@ -50,20 +59,28 @@ export default function StudentLayout({ children }) {
     { name: "Settings", href: "/student/settings", icon: Settings },
   ];
 
-  if (status === 'loading') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-      </div>
-    );
+  // Skip loading checks for login page
+  if (!isLoginPage) {
+    if (status === 'loading') {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
+        </div>
+      );
+    }
+
+    if (!session || !["admin", "trainer", "student"].includes(session.user?.role)) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
+        </div>
+      );
+    }
   }
 
-  if (!session || !["admin", "trainer", "student"].includes(session.user?.role)) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-      </div>
-    );
+  // For login page, just render children without layout
+  if (isLoginPage) {
+    return <>{children}</>;
   }
 
   return (

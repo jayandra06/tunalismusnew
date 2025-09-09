@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,61 +12,18 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Loader2, CheckCircle, BookOpen, ArrowLeft } from "lucide-react";
-import { signIn, useSession } from "next-auth/react";
+import { Eye, EyeOff, Loader2, BookOpen, ArrowLeft } from "lucide-react";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 
 export default function StudentLoginPage() {
-  const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    setIsMounted(true);
-    
-    // Fallback timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
-      console.log('⏰ Student login timeout - forcing render');
-    }, 10000); // 10 second timeout
-    
-    return () => clearTimeout(timeout);
-  }, []);
-
-  useEffect(() => {
-    console.log('🔄 Student login useEffect:', { isMounted, status, session: session ? 'Present' : 'None' });
-    
-    if (!isMounted || status === 'loading') {
-      console.log('⏳ Waiting for mount or auth to load...');
-      return; // Wait for component to mount and auth to load
-    }
-    
-    // Redirect if user is already authenticated and is student
-    if (session && session.user?.role === 'student') {
-      console.log('✅ Student user detected, redirecting to dashboard');
-      router.push('/student/dashboard');
-    } else if (session && session.user?.role !== 'student') {
-      console.log('❌ Non-student user detected, redirecting to appropriate portal');
-      // Redirect non-student users to their appropriate portal
-      switch (session.user.role) {
-        case 'admin':
-          router.push('/admin/dashboard');
-          break;
-        case 'trainer':
-          router.push('/trainer/dashboard');
-          break;
-        default:
-          router.push('/');
-      }
-    } else {
-      console.log('ℹ️ No session found, showing login form');
-    }
-  }, [isMounted, status, session, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,7 +51,10 @@ export default function StudentLoginPage() {
       } else {
         console.log('✅ Login successful');
         setIsSuccess(true);
-        // The useEffect will handle the redirect based on user role
+        // Redirect to student dashboard
+        setTimeout(() => {
+          router.push('/student/dashboard');
+        }, 1000);
       }
     } catch (error) {
       console.error("❌ Login error:", error);
@@ -102,22 +62,6 @@ export default function StudentLoginPage() {
       setIsLoading(false);
     }
   };
-
-  // Show loading state while auth is loading, but with a timeout
-  if (!isMounted || (status === 'loading' && isMounted)) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-gray-800 p-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading authentication...</p>
-          <p className="text-sm text-gray-500 mt-2">Status: {status}</p>
-          <p className="text-xs text-gray-400 mt-4">
-            If this takes too long, please refresh the page
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   // Show success state
   if (isSuccess) {
@@ -127,11 +71,11 @@ export default function StudentLoginPage() {
           <CardHeader className="space-y-1 pb-4">
             <div className="flex justify-center mb-2">
               <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+                <BookOpen className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
             </div>
             <CardTitle className="text-2xl font-bold text-center text-gray-800 dark:text-white">
-              Student Access Granted!
+              Login Successful!
             </CardTitle>
             <CardDescription className="text-center text-gray-600 dark:text-gray-400">
               Redirecting to student dashboard...
@@ -266,4 +210,3 @@ export default function StudentLoginPage() {
     </div>
   );
 }
-

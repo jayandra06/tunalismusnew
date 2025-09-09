@@ -40,11 +40,32 @@ export async function GET(req) {
 
     // Fetch all batches with populated course and instructor data
     const batches = await Batch.find({})
-      .populate('course', 'name displayName description language level')
+      .populate({
+        path: 'course',
+        select: 'name description language level month year',
+        options: { toJSON: { virtuals: true } }
+      })
       .populate('instructor', 'name email')
       .sort({ createdAt: -1 });
 
-    return NextResponse.json({ batches });
+    // Ensure course names are properly set
+    const batchesWithCourseNames = batches.map(batch => {
+      if (batch.course) {
+        // If course has a name, use it; otherwise generate displayName
+        if (!batch.course.name) {
+          const monthNames = [
+            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+          ];
+          batch.course.displayName = `${batch.course.language} ${batch.course.level} ${monthNames[batch.course.month - 1]} ${batch.course.year}`;
+        } else {
+          batch.course.displayName = batch.course.name;
+        }
+      }
+      return batch;
+    });
+
+    return NextResponse.json({ batches: batchesWithCourseNames });
 
   } catch (error) {
     console.error("Error fetching batches:", error);
