@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Payment from "../../../../models/Payment";
 import Course from "../../../../models/Course";
 import User from "../../../../models/User";
+import Batch from "../../../../models/Batch";
 import Enrollment from "../../../../models/Enrollment";
 import { connectToDB } from "../../../../lib/mongodb";
 import Razorpay from "razorpay";
@@ -15,7 +16,7 @@ const razorpay = new Razorpay({
 });
 
 // Email transporter
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: process.env.SMTP_PORT,
   secure: false,
@@ -66,29 +67,73 @@ export async function POST(req) {
       .update(`${order_id}|${payment_id}`)
       .digest('hex');
 
+    // Activate placeholder user if this is a new user registration (only after payment success)
+    let actualUser = payment.user;
+    if (payment.pendingUserData && actualUser.isPlaceholder) {
+      // Activate the placeholder user
+      actualUser.isActive = true;
+      actualUser.isPlaceholder = false;
+      await actualUser.save();
+      
+      // Clear pending data
+      payment.pendingUserData = null;
+      await payment.save();
+    }
+
     // Update payment status
-    payment.status = 'completed';
+    payment.status = 'paid';
     payment.razorpayPaymentId = payment_id;
     payment.paidAt = new Date();
     payment.razorpaySignature = expectedSignature;
     await payment.save();
 
+    // Refresh payment object to ensure all fields are available
+    const updatedPayment = await Payment.findById(payment._id);
+
+    // Debug: Log payment data
+    console.log('🔍 Payment data for enrollment:', {
+      batchType: updatedPayment.batchType,
+      revisionBatch: updatedPayment.revisionBatch,
+      offlineMaterials: updatedPayment.offlineMaterials,
+      amount: updatedPayment.amount
+    });
+
+    // Find available batches for the course
+    const availableBatches = await Batch.find({
+      course: updatedPayment.course._id,
+      status: { $in: ['upcoming', 'active'] },
+      $expr: { $lt: [{ $size: "$students" }, "$maxStudents"] }
+    }).sort({ startDate: 1 });
+
+    // Assign to first available batch or create a new one if none exist
+    let assignedBatch = null;
+    if (availableBatches.length > 0) {
+      assignedBatch = availableBatches[0];
+      // Add student to batch
+      assignedBatch.students.push(actualUser._id);
+      await assignedBatch.save();
+    }
+
     // Create enrollment
     const enrollment = await Enrollment.create({
-      user: payment.user._id,
-      course: payment.course._id,
-      payment: payment._id,
-      batchType: payment.batchType,
-      revisionBatch: payment.revisionBatch,
-      offlineMaterials: payment.offlineMaterials,
+      student: actualUser._id,
+      course: updatedPayment.course._id,
+      batch: assignedBatch?._id || null,
+      batchType: updatedPayment.batchType || 'regular', // Default to 'regular' if undefined
       status: 'active',
+      payment: {
+        amount: updatedPayment.amount,
+        status: 'paid',
+        paymentId: updatedPayment._id,
+        paidAt: new Date()
+      },
       enrolledAt: new Date()
     });
 
     // Update course enrollment count
-    const course = await Course.findById(payment.course._id);
+    const course = await Course.findById(updatedPayment.course._id);
     if (course) {
-      if (payment.batchType === 'revision') {
+      if (updatedPayment.batchType === 'revision') {
         course.batchTypes.revision.studentCount += 1;
       } else {
         course.batchTypes.regular.studentCount += 1;
@@ -110,7 +155,7 @@ export async function POST(req) {
           
           <div style="padding: 30px; background: #f9f9f9;">
             <h2 style="color: #333; margin-top: 0;">Payment Confirmation</h2>
-            <p>Dear ${payment.user.name},</p>
+            <p>Dear ${actualUser.name},</p>
             <p>Thank you for enrolling in our language course! Your payment has been successfully processed.</p>
             
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -153,7 +198,7 @@ export async function POST(req) {
 
       await transporter.sendMail({
         from: process.env.SMTP_USER,
-        to: payment.user.email,
+        to: actualUser.email,
         subject: `Welcome to Tunalismus - ${courseName} Enrollment Confirmed`,
         html: emailContent,
       });
@@ -172,7 +217,7 @@ export async function POST(req) {
       },
       course: {
         _id: course._id,
-        name: courseName,
+        name: course.displayName || course.name,
         language: course.language,
         level: course.level
       },

@@ -63,6 +63,7 @@ const navLinks = {
 
 export default function DashboardLayout({ children }) {
   const { data: session, status } = useSession();
+  const user = session?.user;
   const pathname = usePathname();
   const [activePath, setActivePath] = useState("");
 

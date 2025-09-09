@@ -17,6 +17,7 @@ export default function CourseEnrollmentPage() {
   const courseId = params.courseId;
 
   const [course, setCourse] = useState(null);
+  const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -24,9 +25,14 @@ export default function CourseEnrollmentPage() {
   // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [isNewUser, setIsNewUser] = useState(false);
   const [revisionBatch, setRevisionBatch] = useState(false);
   const [offlineMaterials, setOfflineMaterials] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState('');
+  const [formErrors, setFormErrors] = useState({});
 
   // Price calculation
   const [totalPrice, setTotalPrice] = useState(0);
@@ -42,6 +48,11 @@ export default function CourseEnrollmentPage() {
     calculatePrice();
   }, [course, revisionBatch, offlineMaterials]);
 
+  // Reset selected batch when revision selection changes
+  useEffect(() => {
+    setSelectedBatch('');
+  }, [revisionBatch]);
+
   const fetchCourse = async () => {
     try {
       setLoading(true);
@@ -51,6 +62,9 @@ export default function CourseEnrollmentPage() {
       }
       const data = await response.json();
       setCourse(data.course);
+      
+      // Fetch batches for this course
+      await fetchBatches();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -58,17 +72,46 @@ export default function CourseEnrollmentPage() {
     }
   };
 
+  const fetchBatches = async () => {
+    try {
+      const response = await fetch(`/api/courses/${courseId}/batches`);
+      if (response.ok) {
+        const data = await response.json();
+        setBatches(data.batches || []);
+      }
+    } catch (err) {
+      console.error('Error fetching batches:', err);
+    }
+  };
+
   const calculatePrice = () => {
     if (!course) return;
 
     const batchType = revisionBatch ? 'revision' : 'regular';
-    const pricing = course.pricing?.[batchType] || { basePrice: course.price, offlineMaterialCost: 0 };
     
-    let basePrice = pricing.basePrice || course.price;
+    // Get pricing data with fallbacks
+    let basePrice = 0;
     let materialCost = 0;
+    
+    // Try to get pricing from the new pricing structure
+    if (course.pricing && course.pricing[batchType]) {
+      basePrice = course.pricing[batchType].basePrice || 0;
+      materialCost = course.pricing[batchType].offlineMaterialCost || 0;
+    } 
+    // Fallback to legacy price field
+    else if (course.price) {
+      basePrice = course.price;
+      materialCost = 0;
+    }
+    // If no pricing data at all, set default
+    else {
+      basePrice = 0;
+      materialCost = 0;
+    }
 
+    // Add offline materials cost if selected and enabled
     if (offlineMaterials && course.offlineMaterials?.enabled) {
-      materialCost = pricing.offlineMaterialCost || course.offlineMaterials.totalCost || 0;
+      materialCost = course.offlineMaterials.totalCost || 0;
     }
 
     const total = basePrice + materialCost;
@@ -83,27 +126,70 @@ export default function CourseEnrollmentPage() {
   };
 
   const formatPrice = (price) => {
+    // Handle NaN, undefined, or null values
+    const validPrice = isNaN(price) || price === null || price === undefined ? 0 : price;
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-    }).format(price);
+    }).format(validPrice);
+  };
+
+  // Validation functions
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone) => {
+    const phoneRegex = /^[6-9]\d{9}$/;
+    return phoneRegex.test(phone.replace(/\D/g, ''));
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!email) {
+      errors.email = 'Email is required';
+    } else if (!validateEmail(email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    if (isNewUser) {
+      if (!fullName.trim()) {
+        errors.fullName = 'Full name is required';
+      }
+      if (!phone) {
+        errors.phone = 'Phone number is required';
+      } else if (!validatePhone(phone)) {
+        errors.phone = 'Please enter a valid 10-digit phone number';
+      }
+      if (!password) {
+        errors.password = 'Password is required';
+      } else if (password.length < 6) {
+        errors.password = 'Password must be at least 6 characters long';
+      }
+      if (password !== confirmPassword) {
+        errors.confirmPassword = 'Passwords do not match';
+      }
+    } else {
+      if (!password) {
+        errors.password = 'Password is required for existing users';
+      }
+    }
+
+    if (!selectedBatch) {
+      errors.selectedBatch = 'Please select a batch';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!email) {
-      setError('Email is required');
-      return;
-    }
-
-    if (!isNewUser && !password) {
-      setError('Password is required for existing users');
-      return;
-    }
-
-    if (isNewUser && password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    if (!validateForm()) {
+      setError('Please fix the errors below');
       return;
     }
 
@@ -121,9 +207,12 @@ export default function CourseEnrollmentPage() {
           courseId: course._id,
           email,
           password,
+          fullName,
+          phone,
           isNewUser,
           revisionBatch,
           offlineMaterials,
+          selectedBatch,
           amount: totalPrice,
           batchType: revisionBatch ? 'revision' : 'regular'
         }),
@@ -148,6 +237,12 @@ export default function CourseEnrollmentPage() {
           handler: function (response) {
             // Payment successful
             router.push(`/courses/payment-success?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}`);
+          },
+          modal: {
+            ondismiss: function() {
+              // Payment modal dismissed (user closed without paying)
+              console.log('Payment modal dismissed');
+            }
           },
           prefill: {
             email: email,
@@ -294,7 +389,7 @@ export default function CourseEnrollmentPage() {
                         <div className="flex justify-between items-center">
                           <span>Revision Batch Access</span>
                           <span className="text-sm text-zinc-600 dark:text-zinc-300">
-                            +{formatPrice((course?.pricing?.revision?.basePrice || 0) - (course?.pricing?.regular?.basePrice || course?.price || 0))}
+                            +{formatPrice((course?.pricing?.revision?.basePrice || course?.price || 0) - (course?.pricing?.regular?.basePrice || course?.price || 0))}
                           </span>
                         </div>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -325,6 +420,117 @@ export default function CourseEnrollmentPage() {
                     )}
                   </div>
 
+                  {/* Batch Selection */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Batch Selection</h3>
+                    
+                    {batches.length > 0 ? (
+                      <div className="space-y-3">
+                        {batches
+                          .filter(batch => {
+                            // Filter batches based on revision selection
+                            if (revisionBatch) {
+                              return batch.batchType === 'revision';
+                            } else {
+                              return batch.batchType === 'regular';
+                            }
+                          })
+                          .map((batch) => (
+                            <div
+                              key={batch._id}
+                              className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                                selectedBatch === batch._id
+                                  ? 'border-[var(--color-dusty-rose)] bg-[var(--color-dusty-rose)]/5'
+                                  : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
+                              }`}
+                              onClick={() => setSelectedBatch(batch._id)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2">
+                                    <input
+                                      type="radio"
+                                      id={`batch-${batch._id}`}
+                                      name="batch"
+                                      value={batch._id}
+                                      checked={selectedBatch === batch._id}
+                                      onChange={() => setSelectedBatch(batch._id)}
+                                      className="text-[var(--color-dusty-rose)]"
+                                    />
+                                    <label htmlFor={`batch-${batch._id}`} className="font-medium cursor-pointer">
+                                      {batch.name}
+                                    </label>
+                                    <Badge variant="outline" className="text-xs">
+                                      {batch.batchType}
+                                    </Badge>
+                                  </div>
+                                  
+                                  {/* Batch Schedule */}
+                                  {batch.meetingSchedule && (
+                                    <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                                      {batch.meetingSchedule.days && batch.meetingSchedule.days.length > 0 && (
+                                        <div className="flex items-center space-x-1">
+                                          <span className="text-xs">📅</span>
+                                          <span>{batch.meetingSchedule.days.join(', ')}</span>
+                                        </div>
+                                      )}
+                                      {batch.meetingSchedule.time && batch.meetingSchedule.time.start && batch.meetingSchedule.time.end && (
+                                        <div className="flex items-center space-x-1">
+                                          <span className="text-xs">🕐</span>
+                                          <span>{batch.meetingSchedule.time.start} - {batch.meetingSchedule.time.end}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Batch Info */}
+                                  <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                    {batch.currentStudents || 0} / {batch.maxStudents} students
+                                    {batch.instructor && (
+                                      <span> • Instructor: {batch.instructor.name}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Availability Status */}
+                                <div className="text-right">
+                                  {batch.currentStudents >= batch.maxStudents ? (
+                                    <Badge variant="destructive" className="text-xs">Full</Badge>
+                                  ) : (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {batch.maxStudents - (batch.currentStudents || 0)} spots left
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        
+                        {batches.filter(batch => {
+                          if (revisionBatch) {
+                            return batch.batchType === 'revision';
+                          } else {
+                            return batch.batchType === 'regular';
+                          }
+                        }).length === 0 && (
+                          <div className="text-center py-4 text-zinc-500 dark:text-zinc-400">
+                            <p>No {revisionBatch ? 'revision' : 'regular'} batches available at the moment.</p>
+                            <p className="text-xs mt-1">Please check back later or contact support.</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 text-zinc-500 dark:text-zinc-400">
+                        <p>No batches available at the moment.</p>
+                        <p className="text-xs mt-1">Please check back later or contact support.</p>
+                      </div>
+                    )}
+                    
+                    {formErrors.selectedBatch && (
+                      <p className="text-red-500 text-xs">{formErrors.selectedBatch}</p>
+                    )}
+                  </div>
+
                   {/* User Account */}
                   <div className="space-y-4">
                     <h3 className="font-semibold">Account Information</h3>
@@ -338,6 +544,23 @@ export default function CourseEnrollmentPage() {
                       <Label htmlFor="new-user">I'm a new user</Label>
                     </div>
 
+                    {isNewUser && (
+                      <div>
+                        <Label htmlFor="fullName">Full Name *</Label>
+                        <Input
+                          id="fullName"
+                          type="text"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder="Enter your full name"
+                          className="mt-1"
+                        />
+                        {formErrors.fullName && (
+                          <p className="text-red-500 text-xs mt-1">{formErrors.fullName}</p>
+                        )}
+                      </div>
+                    )}
+
                     <div>
                       <Label htmlFor="email">Email Address *</Label>
                       <Input
@@ -346,10 +569,29 @@ export default function CourseEnrollmentPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="your@email.com"
-                        required
                         className="mt-1"
                       />
+                      {formErrors.email && (
+                        <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>
+                      )}
                     </div>
+
+                    {isNewUser && (
+                      <div>
+                        <Label htmlFor="phone">Phone Number *</Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="Enter your 10-digit phone number"
+                          className="mt-1"
+                        />
+                        {formErrors.phone && (
+                          <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>
+                        )}
+                      </div>
+                    )}
 
                     <div>
                       <Label htmlFor="password">
@@ -361,15 +603,34 @@ export default function CourseEnrollmentPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder={isNewUser ? "Create a password" : "Enter your password"}
-                        required={!isNewUser}
                         className="mt-1"
                       />
-                      {isNewUser && (
+                      {formErrors.password && (
+                        <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>
+                      )}
+                      {isNewUser && !formErrors.password && (
                         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                           Password must be at least 6 characters long
                         </p>
                       )}
                     </div>
+
+                    {isNewUser && (
+                      <div>
+                        <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Confirm your password"
+                          className="mt-1"
+                        />
+                        {formErrors.confirmPassword && (
+                          <p className="text-red-500 text-xs mt-1">{formErrors.confirmPassword}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Price Summary */}

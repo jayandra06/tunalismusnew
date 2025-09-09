@@ -82,7 +82,18 @@ export const authOptions = {
   pages: {
     signIn: "/login",
   },
-  secret: "12345678",
+  secret: process.env.NEXTAUTH_SECRET,
 };
+
+// Authorization helper function
+export function authorize(requiredRole, userRole) {
+  if (!userRole) return false;
+  
+  // Admin can access everything
+  if (userRole === 'admin') return true;
+  
+  // Check if user role matches required role
+  return userRole === requiredRole;
+}
 
 export default NextAuth(authOptions);

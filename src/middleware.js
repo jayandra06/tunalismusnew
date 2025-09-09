@@ -3,16 +3,7 @@ import { getToken } from "next-auth/jwt";
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
-  console.log('🚀 Middleware called for:', pathname);
-  
-  // Debug environment variable
-  console.log('🔧 Middleware Debug:', {
-    hasSecret: !!process.env.NEXTAUTH_SECRET,
-    secretLength: process.env.NEXTAUTH_SECRET?.length || 0,
-    pathname
-  });
-  
-  const token = await getToken({ req, secret: "12345678" });
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   const publicPaths = [
     "/api/auth/[...nextauth]",
@@ -38,11 +29,11 @@ export async function middleware(req) {
       tokenRole: token?.role,
       tokenSub: token?.sub,
       cookies: req.cookies,
-      hasSessionCookie: !!req.cookies['next-auth.session-token']
+      hasSessionCookie: !!req.cookies.get('next-auth.session-token')
     });
     
     if (!token) {
-      console.log('❌ No token found');
+      console.log('❌ No token found for API route:', pathname);
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
@@ -60,9 +51,23 @@ export async function middleware(req) {
       return NextResponse.json({ message: "Student access required" }, { status: 403 });
     }
 
-    const requestHeaders = new Headers(req.headers);
+    // Create new headers object
+    const requestHeaders = new Headers();
+    
+    // Copy existing headers
+    req.headers.forEach((value, key) => {
+      requestHeaders.set(key, value);
+    });
+    
+    // Set custom headers
     requestHeaders.set("X-User-Id", token.sub);
     requestHeaders.set("X-User-Role", token.role);
+
+    console.log('🔧 Setting headers:', {
+      'X-User-Id': token.sub,
+      'X-User-Role': token.role,
+      'HeaderCount': requestHeaders.size
+    });
 
     return NextResponse.next({
       request: {

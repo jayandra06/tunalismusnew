@@ -14,7 +14,8 @@ import {
   Menu,
   X,
   Shield,
-  UserCheck
+  UserCheck,
+  Layers
 } from "lucide-react";
 import Link from "next/link";
 
@@ -23,8 +24,15 @@ export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return; // Don't run auth checks until client-side
+    
     console.log('🔄 Admin layout useEffect triggered');
     console.log('📊 Auth state:', { 
       status, 
@@ -57,7 +65,7 @@ export default function AdminLayout({ children }) {
     }
     
     console.log('✅ Admin access granted, rendering dashboard');
-  }, [status, session, router, pathname]);
+  }, [isClient, status, session, router, pathname]);
 
   const handleLogout = () => {
     signOut({ callbackUrl: '/login' });
@@ -67,6 +75,7 @@ export default function AdminLayout({ children }) {
     { name: "Dashboard", href: "/admin/dashboard", icon: BarChart3 },
     { name: "Users", href: "/admin/users", icon: Users },
     { name: "Courses", href: "/admin/courses", icon: BookOpen },
+    { name: "Batches", href: "/admin/batches", icon: Layers },
     { name: "Enrollments", href: "/admin/enrollments", icon: UserCheck },
     { name: "Payments", href: "/admin/payments", icon: CreditCard },
     { name: "Settings", href: "/admin/settings", icon: Settings },
@@ -75,6 +84,15 @@ export default function AdminLayout({ children }) {
   // Skip auth checks for login page
   if (pathname === '/admin/login') {
     return children;
+  }
+
+  // Show loading until client-side hydration is complete
+  if (!isClient) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-red-600"></div>
+      </div>
+    );
   }
 
   if (status === 'loading') {

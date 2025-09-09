@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -18,6 +20,9 @@ import Link from "next/link";
 export default function AdminDashboard() {
   console.log('🎯 AdminDashboard component rendered');
   
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalCourses: 0,
@@ -29,8 +34,23 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch dashboard stats
-    const fetchStats = async () => {
+    console.log('🔍 Dashboard Session:', {
+      status,
+      session: session ? 'Present' : 'None',
+      user: session?.user,
+      role: session?.user?.role
+    });
+    
+    // Only fetch stats if user is authenticated and has admin role
+    if (status === 'authenticated' && session?.user?.role === 'admin') {
+      fetchStats();
+    } else if (status === 'unauthenticated') {
+      // Redirect to login if not authenticated
+      router.push('/admin/login');
+    }
+  }, [session, status, router]);
+
+  const fetchStats = async () => {
       try {
         const response = await fetch('/api/admin/stats', {
           credentials: 'include', // Include cookies for authentication
@@ -66,9 +86,6 @@ export default function AdminDashboard() {
         setLoading(false);
       }
     };
-
-    fetchStats();
-  }, []);
 
   const statCards = [
     {
@@ -151,6 +168,33 @@ export default function AdminDashboard() {
       color: "bg-orange-600 hover:bg-orange-700"
     }
   ];
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (status === 'unauthenticated') {
+    router.push('/admin/login');
+    return null;
+  }
+
+  // Check if user has admin role
+  if (session?.user?.role !== 'admin') {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h2>
+          <p className="text-gray-600">You don't have permission to access this page.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

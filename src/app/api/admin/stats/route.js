@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import User from "../../../../models/User";
 import Course from "../../../../models/Course";
 import Payment from "../../../../models/Payment";
@@ -6,14 +7,28 @@ import { connectToDB } from "../../../../lib/mongodb";
 
 export async function GET(req) {
   try {
-    await connectToDB();
-
-    // Get user role from middleware headers
-    const userRole = req.headers.get("X-User-Role");
+    // Check authentication directly in the API route
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     
-    if (userRole !== "admin") {
+    console.log('🔍 API Route Debug:', {
+      hasToken: !!token,
+      tokenRole: token?.role,
+      tokenSub: token?.sub,
+      cookies: req.cookies,
+      hasSessionCookie: !!req.cookies['next-auth.session-token']
+    });
+    
+    if (!token) {
+      console.log('❌ No token found in API route');
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+    
+    if (token.role !== "admin") {
+      console.log('❌ Admin access denied in API route:', { tokenRole: token.role, requiredRole: 'admin' });
       return NextResponse.json({ message: "Admin access required" }, { status: 403 });
     }
+
+    await connectToDB();
 
     // Fetch statistics
     const [

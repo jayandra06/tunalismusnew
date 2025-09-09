@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +21,8 @@ import {
 import Link from "next/link";
 
 export default function UsersPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,8 +30,21 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    console.log('🔍 Users Page Session:', {
+      status,
+      session: session ? 'Present' : 'None',
+      user: session?.user,
+      role: session?.user?.role
+    });
+    
+    // Only fetch users if user is authenticated and has admin role
+    if (status === 'authenticated' && session?.user?.role === 'admin') {
+      fetchUsers();
+    } else if (status === 'unauthenticated') {
+      // Redirect to login if not authenticated
+      router.push('/admin/login');
+    }
+  }, [session, status, router]);
 
   const fetchUsers = async () => {
     try {
@@ -127,6 +144,33 @@ export default function UsersPage() {
       day: 'numeric'
     });
   };
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (status === 'unauthenticated') {
+    router.push('/admin/login');
+    return null;
+  }
+
+  // Check if user has admin role
+  if (session?.user?.role !== 'admin') {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h2>
+          <p className="text-gray-600">You don't have permission to access this page.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

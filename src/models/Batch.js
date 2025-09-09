@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 
 const batchSchema = new mongoose.Schema({
   // Batch Identification
+  name: {
+    type: String,
+    required: true
+  },
   batchNumber: {
     type: Number,
     required: true
@@ -50,8 +54,8 @@ const batchSchema = new mongoose.Schema({
   // Batch Status
   status: {
     type: String,
-    enum: ['scheduled', 'active', 'completed', 'cancelled'],
-    default: 'scheduled'
+    enum: ['upcoming', 'active', 'completed', 'cancelled'],
+    default: 'upcoming'
   },
   
   // Instructor Assignment

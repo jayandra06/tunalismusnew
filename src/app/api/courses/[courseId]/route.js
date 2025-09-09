@@ -6,7 +6,8 @@ export async function GET(req, { params }) {
   try {
     await connectToDB();
 
-    const course = await Course.findById(params.id)
+    const { courseId } = await params;
+    const course = await Course.findById(courseId)
       .populate('instructor', 'name email');
 
     if (!course) {
@@ -15,7 +16,7 @@ export async function GET(req, { params }) {
 
     return NextResponse.json({ course }, { status: 200 });
   } catch (error) {
-    console.error("Error in GET /api/courses/[id]:", error);
+    console.error("Error in GET /api/courses/[courseId]:", error);
     return NextResponse.json(
       { message: "Internal Server Error" },
       { status: 500 }

@@ -20,6 +20,8 @@ export async function POST(req) {
       courseId,
       email,
       password,
+      fullName,
+      phone,
       isNewUser,
       revisionBatch,
       offlineMaterials,
@@ -45,7 +47,7 @@ export async function POST(req) {
     }
 
     // Check if course is available
-    if (course.status !== 'active') {
+    if (course.status !== 'active' && course.status !== 'published') {
       return NextResponse.json(
         { message: "Course is not available for enrollment" },
         { status: 400 }
@@ -61,6 +63,8 @@ export async function POST(req) {
 
     // Handle user authentication/creation
     let user;
+    let pendingUserData = null; // Store new user data for later creation
+    
     if (isNewUser) {
       // Check if user already exists
       const existingUser = await User.findOne({ email });
@@ -71,15 +75,22 @@ export async function POST(req) {
         );
       }
 
-      // Create new user
+      // Create a placeholder user record that will be updated after payment success
       const hashedPassword = await bcrypt.hash(password, 12);
       user = await User.create({
         email,
         password: hashedPassword,
         role: 'student',
-        name: email.split('@')[0], // Use email prefix as default name
-        isActive: true
+        name: fullName || email.split('@')[0],
+        phone: phone,
+        isActive: false, // Inactive until payment is completed
+        isPlaceholder: true // Flag to identify placeholder users
       });
+      
+      // Store the original password for later use (will be cleared after payment)
+      pendingUserData = {
+        originalPassword: password
+      };
     } else {
       // Find existing user
       user = await User.findOne({ email });
@@ -101,10 +112,15 @@ export async function POST(req) {
     }
 
     // Create Razorpay order
+    const timestamp = Date.now().toString().slice(-8); // Last 8 digits
+    const shortCourseId = courseId.toString().slice(-6); // Last 6 characters
+    const shortUserId = user._id.toString().slice(-6); // Last 6 characters
+    const receipt = `c${shortCourseId}u${shortUserId}t${timestamp}`; // Max 22 chars
+    
     const orderOptions = {
       amount: amount * 100, // Razorpay expects amount in paise
       currency: 'INR',
-      receipt: `course_${courseId}_${user._id}_${Date.now()}`,
+      receipt: receipt,
       notes: {
         courseId: courseId,
         userId: user._id,
@@ -123,15 +139,17 @@ export async function POST(req) {
       course: courseId,
       amount: amount,
       currency: 'INR',
-      status: 'pending',
+      status: 'created',
       razorpayOrderId: razorpayOrder.id,
       batchType: batchType,
       revisionBatch: revisionBatch,
       offlineMaterials: offlineMaterials,
+      pendingUserData: pendingUserData, // Store new user data for later creation
       metadata: {
         courseName: course.displayName || course.name,
         userEmail: email,
-        batchType: batchType
+        batchType: batchType,
+        isNewUser: isNewUser
       }
     });
 

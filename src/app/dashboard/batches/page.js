@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/providers/auth-provider";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -47,7 +47,8 @@ function BatchRowSkeleton() {
 }
 
 export default function BatchesPage() {
-  const { user } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

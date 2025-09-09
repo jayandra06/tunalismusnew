@@ -1,25 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
-  BookOpen, 
-  Save, 
   ArrowLeft,
-  Plus,
-  Trash2,
-  Calculator,
+  Save,
+  BookOpen,
   Package
 } from "lucide-react";
 import Link from "next/link";
 
-export default function CreateCoursePage() {
+export default function EditCoursePage() {
+  const params = useParams();
   const router = useRouter();
   const { data: session, status } = useSession();
+  const courseId = params.courseId;
+
   const [loading, setLoading] = useState(false);
   const [trainers, setTrainers] = useState([]);
   const [formData, setFormData] = useState({
@@ -72,38 +72,76 @@ export default function CreateCoursePage() {
 
   const [errors, setErrors] = useState({});
 
-  // Fetch trainers on component mount
+  // Fetch course data and trainers on component mount
   useEffect(() => {
-    console.log('🔍 Course Create Page Session:', {
+    console.log('🔍 Course Edit Page Session:', {
       status,
       session: session ? 'Present' : 'None',
       user: session?.user,
       role: session?.user?.role
     });
     
-    // Only fetch trainers if user is authenticated and has admin role
+    // Only fetch data if user is authenticated and has admin role
     if (status === 'authenticated' && session?.user?.role === 'admin') {
-      const fetchTrainers = async () => {
+      const fetchData = async () => {
         try {
-          const response = await fetch('/api/admin/trainers', {
+          // Fetch course data
+          const courseResponse = await fetch(`/api/admin/courses/${courseId}`, {
             credentials: 'include'
           });
           
-          if (response.ok) {
-            const data = await response.json();
-            setTrainers(data.trainers || []);
+          if (courseResponse.ok) {
+            const courseData = await courseResponse.json();
+            const course = courseData.course;
+            
+            setFormData({
+              name: course.name || '',
+              language: course.language || '',
+              level: course.level || '',
+              month: course.month || new Date().getMonth() + 1,
+              year: course.year || new Date().getFullYear(),
+              description: course.description || '',
+              totalCapacity: course.totalCapacity || 50,
+              courseDuration: course.courseDuration || 3,
+              batchSizeLimit: course.batchSizeLimit || 25,
+              batchTypes: course.batchTypes || {
+                regular: { enabled: true, studentCount: 0 },
+                revision: { enabled: false, studentCount: 0 }
+              },
+              pricing: course.pricing || {
+                regular: { basePrice: 0, offlineMaterialCost: 0, totalPrice: 0 },
+                revision: { basePrice: 0, offlineMaterialCost: 0, totalPrice: 0 }
+              },
+              offlineMaterials: course.offlineMaterials || {
+                enabled: false,
+                materials: [],
+                totalCost: 0
+              },
+              instructor: course.instructor?._id || course.instructor || '',
+              status: course.status || 'draft'
+            });
+          }
+
+          // Fetch trainers
+          const trainersResponse = await fetch('/api/admin/trainers', {
+            credentials: 'include'
+          });
+          
+          if (trainersResponse.ok) {
+            const trainersData = await trainersResponse.json();
+            setTrainers(trainersData.trainers || []);
           }
         } catch (error) {
-          console.error('Error fetching trainers:', error);
+          console.error('Error fetching data:', error);
         }
       };
 
-      fetchTrainers();
+      fetchData();
     } else if (status === 'unauthenticated') {
       // Redirect to login if not authenticated
       router.push('/admin/login');
     }
-  }, [session, status, router]);
+  }, [courseId, session, status, router]);
 
   const languages = [
     'English', 'German', 'French', 'Spanish', 'Italian', 
@@ -127,14 +165,6 @@ export default function CreateCoursePage() {
     { value: 12, name: 'December' }
   ];
 
-  const materialTypes = [
-    { value: 'book', label: 'Book' },
-    { value: 'workbook', label: 'Workbook' },
-    { value: 'cd', label: 'CD' },
-    { value: 'dvd', label: 'DVD' },
-    { value: 'other', label: 'Other' }
-  ];
-
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -148,16 +178,6 @@ export default function CreateCoursePage() {
         [field]: null
       }));
     }
-  };
-
-  const handleNestedInputChange = (parent, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [parent]: {
-        ...prev[parent],
-        [field]: value
-      }
-    }));
   };
 
   const handleBatchTypeChange = (type, field, value) => {
@@ -191,80 +211,6 @@ export default function CreateCoursePage() {
     newFormData.pricing[batchType].totalPrice = basePrice + offlineCost;
 
     setFormData(newFormData);
-  };
-
-  const addOfflineMaterial = () => {
-    setFormData(prev => ({
-      ...prev,
-      offlineMaterials: {
-        ...prev.offlineMaterials,
-        materials: [
-          ...prev.offlineMaterials.materials,
-          {
-            name: '',
-            description: '',
-            type: 'book',
-            cost: 0,
-            quantity: 1,
-            totalCost: 0,
-            supplier: '',
-            notes: ''
-          }
-        ]
-      }
-    }));
-  };
-
-  const removeOfflineMaterial = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      offlineMaterials: {
-        ...prev.offlineMaterials,
-        materials: prev.offlineMaterials.materials.filter((_, i) => i !== index)
-      }
-    }));
-    updateOfflineMaterialsCost();
-  };
-
-  const updateOfflineMaterial = (index, field, value) => {
-    const newFormData = { ...formData };
-    newFormData.offlineMaterials.materials[index][field] = value;
-    
-    // Recalculate total cost for this material
-    if (field === 'cost' || field === 'quantity') {
-      const cost = parseFloat(newFormData.offlineMaterials.materials[index].cost) || 0;
-      const quantity = parseInt(newFormData.offlineMaterials.materials[index].quantity) || 1;
-      newFormData.offlineMaterials.materials[index].totalCost = cost * quantity;
-    }
-    
-    setFormData(newFormData);
-    updateOfflineMaterialsCost();
-  };
-
-  const updateOfflineMaterialsCost = () => {
-    const totalCost = formData.offlineMaterials.materials.reduce((sum, material) => {
-      return sum + (material.totalCost || 0);
-    }, 0);
-
-    setFormData(prev => ({
-      ...prev,
-      offlineMaterials: {
-        ...prev.offlineMaterials,
-        totalCost
-      },
-      pricing: {
-        regular: {
-          ...prev.pricing.regular,
-          offlineMaterialCost: prev.offlineMaterials.enabled ? totalCost : 0,
-          totalPrice: prev.pricing.regular.basePrice + (prev.offlineMaterials.enabled ? totalCost : 0)
-        },
-        revision: {
-          ...prev.pricing.revision,
-          offlineMaterialCost: prev.offlineMaterials.enabled ? totalCost : 0,
-          totalPrice: prev.pricing.revision.basePrice + (prev.offlineMaterials.enabled ? totalCost : 0)
-        }
-      }
-    }));
   };
 
   const validateForm = () => {
@@ -301,13 +247,12 @@ export default function CreateCoursePage() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/courses', {
-        method: 'POST',
+      const response = await fetch(`/api/admin/courses/${courseId}`, {
+        method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(formData)
       });
 
@@ -315,7 +260,7 @@ export default function CreateCoursePage() {
         router.push('/admin/courses');
       } else {
         const error = await response.json();
-        setErrors({ submit: error.message || 'Failed to create course' });
+        setErrors({ submit: error.message || 'Failed to update course' });
       }
     } catch (error) {
       setErrors({ submit: 'Network error. Please try again.' });
@@ -370,16 +315,16 @@ export default function CreateCoursePage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/admin/courses">
+        <Link href={`/admin/courses/${courseId}`}>
           <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Courses
+            Back to Course Details
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Create New Course</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Edit Course</h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Set up a new course with batch management and pricing
+            Update course information and settings
           </p>
         </div>
       </div>
@@ -393,7 +338,7 @@ export default function CreateCoursePage() {
               Basic Information
             </CardTitle>
             <CardDescription>
-              Set up the basic course details and configuration
+              Update the basic course details and configuration
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -476,39 +421,6 @@ export default function CreateCoursePage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Course Status *
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => handleInputChange('status', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="archived">Archived</option>
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Published courses can accept enrollments
-                </p>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Course description..."
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Assign Trainer (Optional)
                 </label>
                 <select
@@ -523,10 +435,44 @@ export default function CreateCoursePage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Course Status *
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => handleInputChange('status', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  <option value="draft">Draft (Not accepting enrollments)</option>
+                  <option value="published">Published (Accepting enrollments)</option>
+                  <option value="active">Active (Course in progress)</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  You can assign a trainer later or leave this empty for now
+                  {formData.status === 'draft' && "Course is in draft mode and won't accept enrollments"}
+                  {formData.status === 'published' && "Course is published and accepting enrollments"}
+                  {formData.status === 'active' && "Course is currently running"}
+                  {formData.status === 'completed' && "Course has finished"}
+                  {formData.status === 'cancelled' && "Course has been cancelled"}
                 </p>
               </div>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Description
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Course description..."
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              />
             </div>
           </CardContent>
         </Card>
@@ -536,7 +482,7 @@ export default function CreateCoursePage() {
           <CardHeader>
             <CardTitle>Course Configuration</CardTitle>
             <CardDescription>
-              Set capacity, duration, and batch settings
+              Update capacity, duration, and batch settings
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -681,183 +627,21 @@ export default function CreateCoursePage() {
           </CardContent>
         </Card>
 
-        {/* Offline Materials */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Offline Materials
-            </CardTitle>
-            <CardDescription>
-              Add offline materials and their costs to be included in course pricing
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={formData.offlineMaterials.enabled}
-                onChange={(e) => handleInputChange('offlineMaterials', {
-                  ...formData.offlineMaterials,
-                  enabled: e.target.checked
-                })}
-                className="w-4 h-4 text-green-600"
-              />
-              <label className="font-medium text-gray-900 dark:text-white">
-                Enable Offline Materials
-              </label>
-            </div>
-
-            {formData.offlineMaterials.enabled && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-medium text-gray-900 dark:text-white">Materials</h4>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addOfflineMaterial}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Material
-                  </Button>
-                </div>
-
-                {formData.offlineMaterials.materials.map((material, index) => (
-                  <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-4">
-                      <h5 className="font-medium text-gray-900 dark:text-white">Material {index + 1}</h5>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeOfflineMaterial(index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Name *
-                        </label>
-                        <Input
-                          value={material.name}
-                          onChange={(e) => updateOfflineMaterial(index, 'name', e.target.value)}
-                          placeholder="e.g., Course Book"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Type *
-                        </label>
-                        <select
-                          value={material.type}
-                          onChange={(e) => updateOfflineMaterial(index, 'type', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                        >
-                          {materialTypes.map(type => (
-                            <option key={type.value} value={type.value}>{type.label}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Cost per Unit (₹) *
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={material.cost}
-                          onChange={(e) => updateOfflineMaterial(index, 'cost', e.target.value)}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Quantity *
-                        </label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={material.quantity}
-                          onChange={(e) => updateOfflineMaterial(index, 'quantity', e.target.value)}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Supplier
-                        </label>
-                        <Input
-                          value={material.supplier}
-                          onChange={(e) => updateOfflineMaterial(index, 'supplier', e.target.value)}
-                          placeholder="e.g., Amazon, Local Store"
-                        />
-                      </div>
-
-                      <div className="flex items-end">
-                        <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg w-full">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">Total Cost:</span>
-                            <span className="font-semibold text-green-600 dark:text-green-400">
-                              {formatPrice(material.totalCost)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Description
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={material.description}
-                        onChange={(e) => updateOfflineMaterial(index, 'description', e.target.value)}
-                        placeholder="Material description..."
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                ))}
-
-                {formData.offlineMaterials.materials.length > 0 && (
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-gray-900 dark:text-white">Total Materials Cost:</span>
-                      <span className="text-xl font-bold text-green-600 dark:text-green-400">
-                        {formatPrice(formData.offlineMaterials.totalCost)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Submit */}
         <div className="flex justify-end gap-4">
-          <Link href="/admin/courses">
+          <Link href={`/admin/courses/${courseId}`}>
             <Button variant="outline">Cancel</Button>
           </Link>
           <Button type="submit" disabled={loading} className="bg-red-600 hover:bg-red-700">
             {loading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Creating...
+                Updating...
               </>
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Create Course
+                Update Course
               </>
             )}
           </Button>

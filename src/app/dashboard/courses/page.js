@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/providers/auth-provider";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -45,7 +45,8 @@ function CourseRowSkeleton() {
 }
 
 export default function CoursesPage() {
-  const { user } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

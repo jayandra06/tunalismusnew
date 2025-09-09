@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Mail, Download, ArrowRight } from 'lucide-react';
 import Navbar from '@/components/system/navbar';
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -161,6 +161,18 @@ export default function PaymentSuccessPage() {
                     <span className="text-zinc-600 dark:text-zinc-300">Batch Type:</span>
                     <span className="capitalize">{paymentDetails?.enrollment?.batchType}</span>
                   </div>
+                  {paymentDetails?.enrollment?.selectedBatch && (
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-300">Selected Batch:</span>
+                      <span className="capitalize">{paymentDetails?.enrollment?.selectedBatch}</span>
+                    </div>
+                  )}
+                  {paymentDetails?.enrollment?.preferredTiming && (
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-300">Preferred Timing:</span>
+                      <span className="capitalize">{paymentDetails?.enrollment?.preferredTiming}</span>
+                    </div>
+                  )}
                   {paymentDetails?.enrollment?.offlineMaterials && (
                     <div className="flex justify-between">
                       <span className="text-zinc-600 dark:text-zinc-300">Offline Materials:</span>
@@ -199,6 +211,54 @@ export default function PaymentSuccessPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Important Information */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Important Information</CardTitle>
+              <CardDescription>
+                Please save this information for your reference
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-semibold mb-3">Course Schedule</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-300">Course Start Date:</span>
+                      <span>To be announced via email</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-300">Class Duration:</span>
+                      <span>2 hours per session</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-300">Sessions per Week:</span>
+                      <span>3-4 sessions</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-3">Contact Information</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-300">Student Support:</span>
+                      <span>support@tunalismus.com</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-300">Phone Support:</span>
+                      <span>+91 98765 43210</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-300">WhatsApp:</span>
+                      <span>+91 98765 43210</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Next Steps */}
           <Card className="mb-8">
@@ -285,5 +345,17 @@ export default function PaymentSuccessPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }

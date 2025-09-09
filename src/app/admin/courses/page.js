@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,8 +29,10 @@ import Link from "next/link";
 
 export default function CoursesPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -46,111 +49,62 @@ export default function CoursesPage() {
       user: session?.user,
       role: session?.user?.role
     });
-    fetchCourses();
-  }, [session, status]);
+    
+    // Only fetch courses if user is authenticated and has admin role
+    if (status === 'authenticated' && session?.user?.role === 'admin') {
+      fetchCourses();
+    } else if (status === 'unauthenticated') {
+      // Redirect to login if not authenticated
+      router.push('/admin/login');
+    }
+  }, [session, status, router]);
 
   const fetchCourses = async () => {
     try {
+      console.log('🔄 Fetching courses...');
+      console.log('🍪 Current session:', session);
+      console.log('🔑 Session status:', status);
+      
       const response = await fetch('/api/admin/courses', {
         credentials: 'include', // Include cookies for authentication
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store' // Prevent caching
       });
+      
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
       
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Courses fetched successfully:', data.courses?.length || 0, 'courses');
+        console.log('📋 Sample course data:', data.courses?.[0]);
         setCourses(data.courses || []);
+        setError(null); // Clear any previous errors
       } else {
-        // Mock data for now with batch management features
-        setCourses([
-          {
-            _id: "1",
-            displayName: "German A1 Jan 2024",
-            language: "German",
-            level: "A1",
-            month: 1,
-            year: 2024,
-            totalCapacity: 100,
-            courseDuration: 3,
-            batchSizeLimit: 25,
-            batchTypes: {
-              regular: { enabled: true, studentCount: 75 },
-              revision: { enabled: true, studentCount: 25 }
-            },
-            price: 2999,
-            status: "active",
-            instructor: "Sarah Wilson",
-            createdAt: "2024-01-15T10:30:00Z",
-            batchSummary: {
-              totalStudents: 100,
-              totalBatches: 4,
-              batchTypes: {
-                regular: { batches: 3, students: 75 },
-                revision: { batches: 1, students: 25 }
-              },
-              leftoverBatches: []
-            }
-          },
-          {
-            _id: "2",
-            displayName: "French B2 Feb 2024",
-            language: "French",
-            level: "B2",
-            month: 2,
-            year: 2024,
-            totalCapacity: 50,
-            courseDuration: 4,
-            batchSizeLimit: 20,
-            batchTypes: {
-              regular: { enabled: true, studentCount: 45 },
-              revision: { enabled: false, studentCount: 0 }
-            },
-            price: 3999,
-            status: "active",
-            instructor: "John Doe",
-            createdAt: "2024-01-16T10:30:00Z",
-            batchSummary: {
-              totalStudents: 45,
-              totalBatches: 3,
-              batchTypes: {
-                regular: { batches: 3, students: 45 },
-                revision: { batches: 0, students: 0 }
-              },
-              leftoverBatches: [
-                { _id: "batch3", batchType: "regular", currentStudents: 5, maxStudents: 20 }
-              ]
-            }
-          },
-          {
-            _id: "3",
-            displayName: "English C1 Mar 2024",
-            language: "English",
-            level: "C1",
-            month: 3,
-            year: 2024,
-            totalCapacity: 30,
-            courseDuration: 2,
-            batchSizeLimit: 15,
-            batchTypes: {
-              regular: { enabled: true, studentCount: 0 },
-              revision: { enabled: false, studentCount: 0 }
-            },
-            price: 4999,
-            status: "draft",
-            instructor: "Mike Johnson",
-            createdAt: "2024-01-17T10:30:00Z",
-            batchSummary: {
-              totalStudents: 0,
-              totalBatches: 0,
-              batchTypes: {
-                regular: { batches: 0, students: 0 },
-                revision: { batches: 0, students: 0 }
-              },
-              leftoverBatches: []
-            }
+        let errorMessage = 'Unknown error';
+        try {
+          const errorData = await response.json();
+          console.error('❌ Failed to fetch courses:', errorData);
+          errorMessage = errorData.message || 'Unknown error';
+        } catch (parseError) {
+          console.error('❌ Failed to parse error response:', parseError);
+          if (response.status === 403) {
+            errorMessage = 'Access denied. Please log in as an admin.';
+          } else if (response.status === 401) {
+            errorMessage = 'Authentication required. Please log in.';
+          } else {
+            errorMessage = `Server error (${response.status})`;
           }
-        ]);
+        }
+        setError(`Failed to load courses: ${errorMessage}`);
+        setCourses([]);
       }
     } catch (error) {
       console.error('Error fetching courses:', error);
+      setError(`Network error: ${error.message}`);
+      setCourses([]);
     } finally {
       setLoading(false);
     }
@@ -217,6 +171,44 @@ export default function CoursesPage() {
     }
   };
 
+  const handleViewCourse = (courseId) => {
+    // Navigate to course details page or open modal
+    router.push(`/admin/courses/${courseId}`);
+  };
+
+  const handleEditCourse = (courseId) => {
+    // Navigate to edit course page
+    router.push(`/admin/courses/${courseId}/edit`);
+  };
+
+  const handleDeleteCourse = async (courseId, courseName) => {
+    console.log('🗑️ Attempting to delete course:', { courseId, courseName });
+    
+    if (window.confirm(`Are you sure you want to delete "${courseName}"? This action cannot be undone.`)) {
+      try {
+        console.log('📡 Sending DELETE request to:', `/api/admin/courses/${courseId}`);
+        const response = await fetch(`/api/admin/courses/${courseId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          alert('Course deleted successfully!');
+          fetchCourses(); // Refresh the courses list
+        } else {
+          const errorData = await response.json();
+          alert(`Error deleting course: ${errorData.message || 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error('Error deleting course:', error);
+        alert(`Network error: ${error.message}`);
+      }
+    }
+  };
+
   const filteredCourses = courses.filter(course => {
     const matchesSearch = (course.displayName && course.displayName.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          course.language.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -261,10 +253,82 @@ export default function CoursesPage() {
     });
   };
 
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (status === 'unauthenticated') {
+    router.push('/admin/login');
+    return null;
+  }
+
+  // Check if user has admin role
+  if (session?.user?.role !== 'admin') {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h2>
+          <p className="text-gray-600">You don't have permission to access this page.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Courses</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          
+          {error.includes('Access denied') || error.includes('Authentication required') ? (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500">
+                You need to log in as an admin to access this page.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button 
+                  onClick={() => router.push('/admin/login')} 
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Go to Admin Login
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setError(null);
+                    setLoading(true);
+                    fetchCourses();
+                  }}
+                >
+                  Retry
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button onClick={() => {
+              setError(null);
+              setLoading(true);
+              fetchCourses();
+            }} className="bg-red-600 hover:bg-red-700">
+              Retry
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -431,8 +495,13 @@ export default function CoursesPage() {
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Instructor:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{course.instructor || 'Unassigned'}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Trainer:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {course.instructor ? 
+                      (typeof course.instructor === 'object' ? course.instructor.name : course.instructor) 
+                      : 'Unassigned'
+                    }
+                  </span>
                 </div>
                 
                 <div className="flex items-center justify-between text-sm">
@@ -518,13 +587,29 @@ export default function CoursesPage() {
                       Created: {formatDate(course.createdAt)}
                     </span>
                     <div className="flex items-center space-x-1">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleViewCourse(course._id)}
+                        title="View Course Details"
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditCourse(course._id)}
+                        title="Edit Course"
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDeleteCourse(course._id, course.displayName || course.name)}
+                        title="Delete Course"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

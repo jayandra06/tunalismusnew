@@ -46,8 +46,8 @@ export class BatchManagementService {
         }
       };
 
-      // Create batches for regular students
-      if (course.batchTypes.regular.enabled && regularEnrollments.length > 0) {
+      // Create batches for regular students (even if no enrollments yet)
+      if (course.batchTypes.regular.enabled) {
         const regularResult = await this.createBatchesForType(
           courseId, 
           'regular', 
@@ -61,8 +61,8 @@ export class BatchManagementService {
         result.leftoverBatches.push(...regularResult.leftoverBatches);
       }
 
-      // Create batches for revision students
-      if (course.batchTypes.revision.enabled && revisionEnrollments.length > 0) {
+      // Create batches for revision students (even if no enrollments yet)
+      if (course.batchTypes.revision.enabled) {
         const revisionResult = await this.createBatchesForType(
           courseId, 
           'revision', 
@@ -105,7 +105,27 @@ export class BatchManagementService {
       leftoverBatches: []
     };
 
+    // If no enrollments, create at least one empty batch for the course
     if (enrollments.length === 0) {
+      const existingBatches = await Batch.find({ 
+        course: courseId, 
+        batchType: batchType 
+      }).sort({ batchNumber: -1 });
+      
+      const nextBatchNumber = existingBatches.length > 0 ? existingBatches[0].batchNumber + 1 : 1;
+
+      const emptyBatch = await this.createBatch(
+        courseId,
+        batchType,
+        nextBatchNumber,
+        batchSizeLimit,
+        [], // No enrollments
+        courseDuration,
+        month,
+        year
+      );
+
+      result.batches.push(emptyBatch);
       return result;
     }
 
@@ -180,6 +200,9 @@ export class BatchManagementService {
    * @returns {Object} Created batch
    */
   static async createBatch(courseId, batchType, batchNumber, maxStudents, enrollments, courseDuration, month, year, isLeftoverBatch = false) {
+    // Get course to inherit instructor
+    const course = await Course.findById(courseId);
+    
     // Calculate start and end dates
     const startDate = new Date(year, month - 1, 1); // First day of the month
     const endDate = new Date(year, month - 1 + courseDuration, 0); // Last day of the final month
@@ -194,7 +217,9 @@ export class BatchManagementService {
       endDate,
       duration: courseDuration,
       isLeftoverBatch,
-      status: 'scheduled'
+      status: 'upcoming',
+      instructor: course?.instructor || null, // Inherit instructor from course
+      name: `${batchType.charAt(0).toUpperCase() + batchType.slice(1)} Batch ${batchNumber}` // Add name field
     });
 
     await batch.save();

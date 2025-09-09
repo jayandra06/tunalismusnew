@@ -23,6 +23,12 @@ export default function StudentCoursesPage() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isClient, setIsClient] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -71,7 +77,7 @@ export default function StudentCoursesPage() {
     return 'bg-red-500';
   };
 
-  if (loading) {
+  if (!isClient || loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
@@ -182,7 +188,7 @@ export default function StudentCoursesPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                      {course.title}
+                      {course.displayName || course.name || 'Untitled Course'}
                     </CardTitle>
                     <CardDescription className="text-gray-600 dark:text-gray-400 mb-3">
                       {course.description || 'No description available'}

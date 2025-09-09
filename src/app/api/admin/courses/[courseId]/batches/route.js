@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import Course from "../../../../../../models/Course";
 import Batch from "../../../../../../models/Batch";
 import User from "../../../../../../models/User";
@@ -7,16 +8,20 @@ import { BatchManagementService } from "../../../../../../lib/batch-management-s
 
 export async function GET(req, { params }) {
   try {
-    await connectToDB();
-
-    // Get user role from middleware headers
-    const userRole = req.headers.get("X-User-Role");
+    // Check authentication directly in the API route
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     
-    if (userRole !== "admin") {
+    if (!token) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+    
+    if (token.role !== "admin") {
       return NextResponse.json({ message: "Admin access required" }, { status: 403 });
     }
 
-    const { courseId } = params;
+    await connectToDB();
+
+    const { courseId } = await params;
 
     // Get course
     const course = await Course.findById(courseId);
@@ -40,16 +45,20 @@ export async function GET(req, { params }) {
 
 export async function POST(req, { params }) {
   try {
-    await connectToDB();
-
-    // Get user role from middleware headers
-    const userRole = req.headers.get("X-User-Role");
+    // Check authentication directly in the API route
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     
-    if (userRole !== "admin") {
+    if (!token) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+    
+    if (token.role !== "admin") {
       return NextResponse.json({ message: "Admin access required" }, { status: 403 });
     }
 
-    const { courseId } = params;
+    await connectToDB();
+
+    const { courseId } = await params;
     const { action } = await req.json();
 
     if (action === 'create_batches') {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import Course from "../../../../models/Course";
 import { connectToDB } from "../../../../lib/mongodb";
 import { BatchManagementService } from "../../../../lib/batch-management-service";
@@ -7,12 +8,34 @@ export async function GET(req) {
   try {
     await connectToDB();
 
+    // Debug: Log all headers
+    console.log('🔍 API Route Headers Debug:', {
+      allHeaders: Object.fromEntries(req.headers.entries()),
+      userRole: req.headers.get("X-User-Role"),
+      userId: req.headers.get("X-User-Id"),
+      authorization: req.headers.get("authorization"),
+      cookie: req.headers.get("cookie")
+    });
+
     // Get user role from middleware headers
-    const userRole = req.headers.get("X-User-Role");
+    let userRole = req.headers.get("X-User-Role");
+    
+    // Fallback: If headers aren't set by middleware, try to get token directly
+    if (!userRole) {
+      console.log('⚠️ No X-User-Role header found, trying direct token check...');
+      const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+      if (token) {
+        userRole = token.role;
+        console.log('✅ Got role from direct token:', userRole);
+      }
+    }
     
     if (userRole !== "admin") {
+      console.log('❌ Admin access denied in API route:', { userRole, expected: 'admin' });
       return NextResponse.json({ message: "Admin access required" }, { status: 403 });
     }
+    
+    console.log('✅ Admin access granted in API route');
 
     // Get query parameters
     const { searchParams } = new URL(req.url);
@@ -31,8 +54,9 @@ export async function GET(req) {
     // Calculate skip value for pagination
     const skip = (page - 1) * limit;
 
-    // Fetch courses with pagination
+    // Fetch courses with pagination and populate instructor
     const courses = await Course.find(filter)
+      .populate('instructor', 'name email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -74,12 +98,34 @@ export async function POST(req) {
   try {
     await connectToDB();
 
-    // Get user role from middleware headers
-    const userRole = req.headers.get("X-User-Role");
+    // Debug: Log all headers
+    console.log('🔍 Course Creation API Headers Debug:', {
+      allHeaders: Object.fromEntries(req.headers.entries()),
+      userRole: req.headers.get("X-User-Role"),
+      userId: req.headers.get("X-User-Id"),
+      authorization: req.headers.get("authorization"),
+      cookie: req.headers.get("cookie")
+    });
+
+    // Get user role from middleware headers first
+    let userRole = req.headers.get("X-User-Role");
+    
+    // Fallback: If headers aren't set by middleware, try to get token directly
+    if (!userRole) {
+      console.log('⚠️ No X-User-Role header found, trying direct token check...');
+      const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+      if (token) {
+        userRole = token.role;
+        console.log('✅ Got role from direct token:', userRole);
+      }
+    }
     
     if (userRole !== "admin") {
+      console.log('❌ Admin access denied in course creation API:', { userRole, expected: 'admin' });
       return NextResponse.json({ message: "Admin access required" }, { status: 403 });
     }
+    
+    console.log('✅ Admin access granted for course creation');
 
     const {
       name,
@@ -182,10 +228,9 @@ export async function POST(req) {
     await course.save();
 
     // Populate instructor information if instructor is assigned
-    // Note: Temporarily disabled to avoid User model registration issues
-    // if (course.instructor) {
-    //   await course.populate('instructor', 'name email');
-    // }
+    if (course.instructor) {
+      await course.populate('instructor', 'name email');
+    }
 
     return NextResponse.json({ course }, { status: 201 });
 
