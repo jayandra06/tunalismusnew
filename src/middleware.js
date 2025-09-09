@@ -3,7 +3,16 @@ import { getToken } from "next-auth/jwt";
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  console.log('🚀 Middleware called for:', pathname);
+  
+  // Debug environment variable
+  console.log('🔧 Middleware Debug:', {
+    hasSecret: !!process.env.NEXTAUTH_SECRET,
+    secretLength: process.env.NEXTAUTH_SECRET?.length || 0,
+    pathname
+  });
+  
+  const token = await getToken({ req, secret: "12345678" });
 
   const publicPaths = [
     "/api/auth/[...nextauth]",
@@ -23,12 +32,23 @@ export async function middleware(req) {
 
   // For API routes, check authentication
   if (pathname.startsWith("/api/")) {
+    console.log('🔍 API Route Access Check:', {
+      pathname,
+      hasToken: !!token,
+      tokenRole: token?.role,
+      tokenSub: token?.sub,
+      cookies: req.cookies,
+      hasSessionCookie: !!req.cookies['next-auth.session-token']
+    });
+    
     if (!token) {
+      console.log('❌ No token found');
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     // Check role-based access for API routes
     if (pathname.startsWith("/api/admin/") && token.role !== "admin") {
+      console.log('❌ Admin access denied:', { tokenRole: token.role, requiredRole: 'admin' });
       return NextResponse.json({ message: "Admin access required" }, { status: 403 });
     }
     

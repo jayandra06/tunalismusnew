@@ -7,18 +7,39 @@ export async function GET(req, { params }) {
   try {
     await connectToDB();
 
-    const batch = await Batch.findById(params.id)
-      .populate("course")
-      .populate("trainer", "name email")
-      .populate("students", "name email");
+    const userRole = req.headers.get("X-User-Role");
+    const userId = req.headers.get("X-User-Id");
+    const batchId = params.id;
+
+    // Only trainers and admins can access this route
+    if (!authorize("trainer", userRole)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    // Find the batch
+    const batch = await Batch.findById(batchId)
+      .populate('course', 'title description')
+      .populate('students', 'name email phone')
+      .populate('trainer', 'name email');
 
     if (!batch) {
-      return NextResponse.json({ message: "Batch not found" }, { status: 404 });
+      return NextResponse.json(
+        { message: "Batch not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if user has access to this batch (trainer or admin)
+    if (userRole !== 'admin' && batch.trainer._id.toString() !== userId) {
+      return NextResponse.json(
+        { message: "Access denied" },
+        { status: 403 }
+      );
     }
 
     return NextResponse.json({ batch }, { status: 200 });
   } catch (error) {
-    console.error(`Error in GET /api/batches/${params.id}:`, error);
+    console.error("Error in GET /api/batches/[id]:", error);
     return NextResponse.json(
       { message: "Internal Server Error" },
       { status: 500 }
@@ -31,27 +52,62 @@ export async function PUT(req, { params }) {
     await connectToDB();
 
     const userRole = req.headers.get("X-User-Role");
+    const userId = req.headers.get("X-User-Id");
+    const batchId = params.id;
 
-    if (!authorize("admin", userRole)) {
+    // Only trainers and admins can update batches
+    if (!authorize("trainer", userRole)) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    const { name, course, trainer, startDate, endDate, schedule, students } =
-      await req.json();
+    const body = await req.json();
+    const { name, description, startDate, endDate, maxStudents, schedule, location, type, status } = body;
 
-    const updatedBatch = await Batch.findByIdAndUpdate(
-      params.id,
-      { name, course, trainer, startDate, endDate, schedule, students },
-      { new: true }
-    );
+    // Find the batch
+    const batch = await Batch.findById(batchId);
 
-    if (!updatedBatch) {
-      return NextResponse.json({ message: "Batch not found" }, { status: 404 });
+    if (!batch) {
+      return NextResponse.json(
+        { message: "Batch not found" },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({ batch: updatedBatch }, { status: 200 });
+    // Check if user has access to this batch (trainer or admin)
+    if (userRole !== 'admin' && batch.trainer.toString() !== userId) {
+      return NextResponse.json(
+        { message: "Access denied" },
+        { status: 403 }
+      );
+    }
+
+    // Update batch fields
+    if (name) batch.name = name;
+    if (description) batch.description = description;
+    if (startDate) batch.startDate = new Date(startDate);
+    if (endDate) batch.endDate = new Date(endDate);
+    if (maxStudents) batch.maxStudents = maxStudents;
+    if (schedule) batch.schedule = schedule;
+    if (location) batch.location = location;
+    if (type) batch.type = type;
+    if (status) batch.status = status;
+
+    await batch.save();
+
+    // Populate the response
+    await batch.populate('course', 'title description');
+    await batch.populate('students', 'name email phone');
+    await batch.populate('trainer', 'name email');
+
+    return NextResponse.json(
+      { 
+        message: "Batch updated successfully", 
+        batch 
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error(`Error in PUT /api/batches/${params.id}:`, error);
+    console.error("Error in PUT /api/batches/[id]:", error);
     return NextResponse.json(
       { message: "Internal Server Error" },
       { status: 500 }
@@ -64,15 +120,22 @@ export async function DELETE(req, { params }) {
     await connectToDB();
 
     const userRole = req.headers.get("X-User-Role");
+    const userId = req.headers.get("X-User-Id");
+    const batchId = params.id;
 
-    if (!authorize("admin", userRole)) {
+    // Only admins can delete batches
+    if (userRole !== 'admin') {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    const deletedBatch = await Batch.findByIdAndDelete(params.id);
+    // Find and delete the batch
+    const batch = await Batch.findByIdAndDelete(batchId);
 
-    if (!deletedBatch) {
-      return NextResponse.json({ message: "Batch not found" }, { status: 404 });
+    if (!batch) {
+      return NextResponse.json(
+        { message: "Batch not found" },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json(
@@ -80,7 +143,7 @@ export async function DELETE(req, { params }) {
       { status: 200 }
     );
   } catch (error) {
-    console.error(`Error in DELETE /api/batches/${params.id}:`, error);
+    console.error("Error in DELETE /api/batches/[id]:", error);
     return NextResponse.json(
       { message: "Internal Server Error" },
       { status: 500 }

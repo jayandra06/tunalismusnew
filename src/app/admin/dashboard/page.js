@@ -32,12 +32,15 @@ export default function AdminDashboard() {
     // Fetch dashboard stats
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/admin/stats');
+        const response = await fetch('/api/admin/stats', {
+          credentials: 'include', // Include cookies for authentication
+        });
         
         if (response.ok) {
           const data = await response.json();
           setStats(data);
         } else {
+          console.error('Failed to fetch stats:', response.status, response.statusText);
           // Use default stats if API fails
           setStats({
             totalUsers: 0,

@@ -22,6 +22,7 @@ import {
   Download,
   Bell
 } from "lucide-react";
+import Link from "next/link";
 
 export default function TrainerSchedulePage() {
   const [sessions, setSessions] = useState([]);
@@ -40,7 +41,7 @@ export default function TrainerSchedulePage() {
         
         // Fetch sessions and batches
         const [sessionsResponse, batchesResponse] = await Promise.all([
-          fetch('/api/trainer/schedule', {
+          fetch('/api/trainer/sessions', {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
           fetch('/api/trainer/batches', {
@@ -277,10 +278,12 @@ export default function TrainerSchedulePage() {
             Manage your training sessions and classes
           </p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Schedule Session
-        </Button>
+        <Link href="/trainer/sessions/new">
+          <Button className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Schedule Session
+          </Button>
+        </Link>
       </div>
 
       {/* Quick Stats */}

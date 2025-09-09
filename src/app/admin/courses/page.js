@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ import {
 import Link from "next/link";
 
 export default function CoursesPage() {
+  const { data: session, status } = useSession();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,14 +37,23 @@ export default function CoursesPage() {
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [showLeftoverModal, setShowLeftoverModal] = useState(false);
   const [leftoverBatch, setLeftoverBatch] = useState(null);
+  const [loadingBatches, setLoadingBatches] = useState({});
 
   useEffect(() => {
+    console.log('🔍 Courses Page Session:', {
+      status,
+      session: session ? 'Present' : 'None',
+      user: session?.user,
+      role: session?.user?.role
+    });
     fetchCourses();
-  }, []);
+  }, [session, status]);
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch('/api/admin/courses');
+      const response = await fetch('/api/admin/courses', {
+        credentials: 'include', // Include cookies for authentication
+      });
       
       if (response.ok) {
         const data = await response.json();
@@ -147,26 +158,41 @@ export default function CoursesPage() {
 
   const handleCreateBatches = async (courseId) => {
     try {
+      setLoadingBatches(prev => ({ ...prev, [courseId]: true }));
+      console.log('Creating batches for course:', courseId);
       const response = await fetch(`/api/admin/courses/${courseId}/batches`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({ action: 'create_batches' })
       });
 
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Batch creation result:', data);
         // Check for leftover batches
         if (data.result.leftoverBatches && data.result.leftoverBatches.length > 0) {
           setLeftoverBatch(data.result.leftoverBatches[0]);
           setShowLeftoverModal(true);
+        } else {
+          alert('Batches created successfully!');
         }
         // Refresh courses
         fetchCourses();
+      } else {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        alert(`Error creating batches: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error creating batches:', error);
+      alert(`Network error: ${error.message}`);
+    } finally {
+      setLoadingBatches(prev => ({ ...prev, [courseId]: false }));
     }
   };
 
@@ -306,7 +332,7 @@ export default function CoursesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {courses.reduce((sum, course) => sum + course.enrolledStudents, 0)}
+              {courses.reduce((sum, course) => sum + (course.batchSummary?.totalStudents || 0), 0)}
             </div>
           </CardContent>
         </Card>
@@ -320,7 +346,7 @@ export default function CoursesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatPrice(courses.reduce((sum, course) => sum + (course.price * course.enrolledStudents), 0))}
+              {formatPrice(courses.reduce((sum, course) => sum + (course.price * (course.batchSummary?.totalStudents || 0)), 0))}
             </div>
           </CardContent>
         </Card>
@@ -510,9 +536,10 @@ export default function CoursesPage() {
                       size="sm" 
                       className="flex-1 bg-blue-600 hover:bg-blue-700"
                       onClick={() => handleCreateBatches(course._id)}
+                      disabled={loadingBatches[course._id]}
                     >
                       <Settings className="h-4 w-4 mr-1" />
-                      Manage Batches
+                      {loadingBatches[course._id] ? 'Creating...' : 'Manage Batches'}
                     </Button>
                   </div>
                 </div>

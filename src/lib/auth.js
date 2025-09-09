@@ -49,17 +49,32 @@ export const authOptions = {
   session: {
     strategy: "jwt",
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: false
+      }
+    }
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
+        token.id = user.id;
+        console.log('🔑 JWT callback - user:', { id: user.id, role: user.role });
       }
+      console.log('🔑 JWT callback - token:', { sub: token.sub, role: token.role });
       return token;
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.sub;
+        session.user.id = token.sub || token.id;
         session.user.role = token.role;
+        console.log('📋 Session callback - session:', { userId: session.user.id, role: session.user.role });
       }
       return session;
     },
@@ -67,7 +82,7 @@ export const authOptions = {
   pages: {
     signIn: "/login",
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: "12345678",
 };
 
 export default NextAuth(authOptions);

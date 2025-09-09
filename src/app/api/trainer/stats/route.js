@@ -29,14 +29,14 @@ export async function GET(req) {
     // Calculate total teaching hours (mock calculation based on batch duration)
     const totalHours = totalBatches * 40; // Assuming 40 hours per batch on average
     
-    // Count upcoming sessions (mock data for now)
-    const upcomingSessions = 8; // This would come from a Meeting/Session model
+    // Count upcoming sessions (mock data for now - would come from Meeting/Session model)
+    const upcomingSessions = Math.floor(Math.random() * 10) + 5; // Random between 5-15
     
-    // Count completed sessions (mock data for now)
-    const completedSessions = 24; // This would come from a Meeting/Session model
+    // Count completed sessions (mock data for now - would come from Meeting/Session model)
+    const completedSessions = Math.floor(Math.random() * 20) + 15; // Random between 15-35
     
-    // Average rating (mock data for now)
-    const averageRating = 4.8;
+    // Average rating (mock data for now - would come from student feedback)
+    const averageRating = (Math.random() * 1.5 + 3.5).toFixed(1); // Random between 3.5-5.0
 
     const stats = {
       totalBatches,

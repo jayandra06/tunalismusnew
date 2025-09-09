@@ -30,7 +30,7 @@ export async function GET(req) {
       ]
     }).populate('course', 'title').populate('batch', 'name');
 
-    // For now, return mock data since we don't have all materials set up
+    // Return materials with additional mock data for demonstration
     // In a real implementation, you would return the actual materials
     const mockMaterials = [
       {
