@@ -32,12 +32,21 @@ export async function middleware(req) {
       tokenRole: token?.role,
       tokenSub: token?.sub,
       cookies: req.cookies,
-      hasSessionCookie: !!req.cookies.get('next-auth.session-token')
+      hasSessionCookie: !!req.cookies.get('next-auth.session-token'),
+      allCookies: req.cookies.getAll().map(c => ({ name: c.name, hasValue: !!c.value }))
     });
     
     if (!token) {
       console.log('❌ No token found for API route:', pathname);
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      console.log('🔍 Available cookies:', req.cookies.getAll().map(c => c.name));
+      return NextResponse.json({ 
+        message: "Unauthorized",
+        debug: {
+          hasToken: false,
+          availableCookies: req.cookies.getAll().map(c => c.name),
+          pathname
+        }
+      }, { status: 401 });
     }
 
     // Check role-based access for API routes
