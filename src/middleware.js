@@ -21,7 +21,11 @@ export async function middleware(req) {
     });
   }
   
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ 
+    req, 
+    secret: process.env.NEXTAUTH_SECRET,
+    cookieName: 'next-auth.session-token'
+  });
   
   console.log('🔍 Middleware token check:', {
     pathname,
@@ -31,7 +35,8 @@ export async function middleware(req) {
     tokenEmail: token?.email,
     environment: process.env.NODE_ENV,
     hasSessionCookie: !!req.cookies.get('next-auth.session-token'),
-    sessionCookieValue: req.cookies.get('next-auth.session-token')?.value?.substring(0, 20) + '...' || 'none'
+    sessionCookieValue: req.cookies.get('next-auth.session-token')?.value?.substring(0, 20) + '...' || 'none',
+    allCookies: req.cookies.getAll().map(c => ({ name: c.name, hasValue: !!c.value }))
   });
 
   const publicPaths = [
