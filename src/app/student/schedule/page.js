@@ -31,11 +31,8 @@ export default function StudentSchedulePage() {
   useEffect(() => {
     const fetchSchedule = async () => {
       try {
-        const token = localStorage.getItem('token');
         const response = await fetch('/api/student/schedule', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          credentials: 'include'
         });
         
         if (response.ok) {

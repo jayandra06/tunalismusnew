@@ -32,10 +32,19 @@ export async function GET(req, { params }) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
+    // Validate batchId format
+    if (!batchId || !/^[0-9a-fA-F]{24}$/.test(batchId)) {
+      console.log('❌ Invalid batchId format:', batchId);
+      return NextResponse.json({ 
+        message: "Invalid batch ID format. Expected 24-character hex string." 
+      }, { status: 400 });
+    }
+
     // Find the batch
     const batch = await Batch.findById(batchId).populate('course', 'language level month year name');
     
     if (!batch) {
+      console.log('❌ Batch not found for ID:', batchId);
       return NextResponse.json({ message: "Batch not found" }, { status: 404 });
     }
 
@@ -183,10 +192,19 @@ export async function POST(req, { params }) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
+    // Validate batchId format
+    if (!batchId || !/^[0-9a-fA-F]{24}$/.test(batchId)) {
+      console.log('❌ Invalid batchId format:', batchId);
+      return NextResponse.json({ 
+        message: "Invalid batch ID format. Expected 24-character hex string." 
+      }, { status: 400 });
+    }
+
     // Find the batch
     const batch = await Batch.findById(batchId);
     
     if (!batch) {
+      console.log('❌ Batch not found for ID:', batchId);
       return NextResponse.json({ message: "Batch not found" }, { status: 404 });
     }
 

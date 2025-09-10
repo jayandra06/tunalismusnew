@@ -114,7 +114,7 @@ export default function HomePage() {
       </div>
 
       {/* Second Section */}
-      <section className="py-20 overflow-hidden bg-white dark:bg-zinc-900" id="second-section">
+      <section className="py-20 overflow-hidden bg-[#eff2f2] dark:bg-zinc-900" id="second-section">
         <div className="container mx-auto px-5 sm:px-10 md:px-12 lg:px-5 relative z-50">
           {/* Decorative elements */}
           <div className="absolute left-0 w-1/3 h-[600px] bg-[var(--color-soft-blue)] opacity-5 dark:opacity-10 -z-10 rounded-full blur-3xl" />
@@ -139,14 +139,14 @@ export default function HomePage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white dark:bg-zinc-800 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-700">
+                  <div className="bg-[#f8f9fa] dark:bg-zinc-800 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-700">
                     <h3 className="text-xl font-bold text-[var(--color-muted-zinc)] dark:text-[var(--color-muted-zinc-light)] mb-3">My Journey</h3>
                     <p className="text-zinc-700 dark:text-zinc-300">
                       From my home in Hamburg (Germany), I've created Tunalismus with one simple belief: languages are bridges to other cultures and to parts of yourself you never knew existed.
                     </p>
                   </div>
 
-                  <div className="bg-white dark:bg-zinc-800 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-700">
+                  <div className="bg-[#f8f9fa] dark:bg-zinc-800 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-700">
                     <h3 className="text-xl font-bold text-[var(--color-muted-zinc)] dark:text-[var(--color-muted-zinc-light)] mb-3">How I Teach</h3>
                     <p className="text-zinc-700 dark:text-zinc-300">
                       I create safe spaces where you can explore languages naturally, focusing on being heard and understood rather than just speaking perfectly.

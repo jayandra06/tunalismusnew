@@ -16,7 +16,7 @@ import {
   Users
 } from "lucide-react";
 import Link from "next/link";
-import JitsiMeetButton from "@/components/ui/jitsi-meet-button";
+import { JitsiMeetButtonCompact } from "@/components/ui/jitsi-meet-button";
 
 export default function StudentDashboard() {
   const [stats, setStats] = useState({
@@ -27,31 +27,47 @@ export default function StudentDashboard() {
     averageProgress: 0,
     certificates: 0
   });
+  const [courses, setCourses] = useState([]);
+  const [liveClasses, setLiveClasses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch student dashboard stats
-    const fetchStats = async () => {
+    // Fetch student dashboard data
+    const fetchDashboardData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/student/stats', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        // Fetch stats, courses, and live classes in parallel
+        const [statsResponse, coursesResponse] = await Promise.all([
+          fetch('/api/student/stats', {
+            credentials: 'include'
+          }),
+          fetch('/api/student/batches', {
+            credentials: 'include'
+          })
+        ]);
         
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json();
+          setStats(statsData);
+        }
+        
+        if (coursesResponse.ok) {
+          const coursesData = await coursesResponse.json();
+          setCourses(coursesData.batches || []);
+          
+          // Filter live classes (active meetings)
+          const liveClasses = coursesData.batches?.filter(batch => 
+            batch.meeting?.isActive
+          ) || [];
+          setLiveClasses(liveClasses);
         }
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        console.error('Error fetching dashboard data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStats();
+    fetchDashboardData();
   }, []);
 
   const statCards = [
@@ -221,82 +237,57 @@ export default function StudentDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {/* German A1 Course */}
-              <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">German A1</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Progress: 75%</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <JitsiMeetButton
-                    batchId="german-a1-batch-1"
-                    batchName="German A1 - Batch 1"
-                    userRole="student"
-                    onMeetingJoin={() => console.log('Joined German A1 class')}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  />
-                  <Button variant="outline" size="sm">
-                    <Play className="h-4 w-4" />
-                  </Button>
-                </div>
+            {courses.length === 0 ? (
+              <div className="text-center py-8">
+                <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">No courses enrolled yet</p>
+                <Link href="/courses">
+                  <Button className="mt-4">Browse Courses</Button>
+                </Link>
               </div>
-              
-              {/* German B1 Course */}
-              <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-white" />
+            ) : (
+              <div className="space-y-4">
+                {courses.slice(0, 3).map((course, index) => (
+                  <div key={course._id} className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
+                        <BookOpen className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {course.course?.displayName || course.course?.name || `${course.course?.language} ${course.course?.level}`}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {course.batchType?.charAt(0).toUpperCase() + course.batchType?.slice(1)} Batch {course.batchNumber}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <JitsiMeetButtonCompact
+                        batchId={course._id}
+                        meetingUrl={course.meeting?.meetingUrl}
+                        userRole="student"
+                        isActive={course.meeting?.isActive}
+                        onMeetingJoin={() => console.log('Joined class:', course.course?.displayName)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      />
+                      <Button variant="outline" size="sm">
+                        <Play className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">German B1</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Progress: 45%</p>
+                ))}
+                {courses.length > 3 && (
+                  <div className="text-center">
+                    <Link href="/student/courses">
+                      <Button variant="outline" size="sm">
+                        View All Courses ({courses.length})
+                      </Button>
+                    </Link>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <JitsiMeetButton
-                    batchId="german-b1-batch-1"
-                    batchName="German B1 - Batch 1"
-                    userRole="student"
-                    onMeetingJoin={() => console.log('Joined German B1 class')}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  />
-                  <Button variant="outline" size="sm">
-                    <Play className="h-4 w-4" />
-                  </Button>
-                </div>
+                )}
               </div>
-              
-              {/* English Course */}
-              <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">English Intermediate</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Progress: 60%</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <JitsiMeetButton
-                    batchId="english-intermediate-batch-1"
-                    batchName="English Intermediate - Batch 1"
-                    userRole="student"
-                    onMeetingJoin={() => console.log('Joined English class')}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  />
-                  <Button variant="outline" size="sm">
-                    <Play className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -349,75 +340,52 @@ export default function StudentDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {/* German A1 Class */}
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg border border-green-200 dark:border-green-800">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
-                  <Video className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white">German A1 - Live Class</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <Clock className="h-4 w-4 inline mr-1" />
-                    10:00 AM - 11:30 AM
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    <Users className="h-3 w-3 inline mr-1" />
-                    Instructor: Maria Schmidt
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col items-end space-y-2">
-                <div className="flex items-center space-x-2 text-green-600">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium">Live Now</span>
-                </div>
-                <JitsiMeetButton
-                  batchId="german-a1-batch-1"
-                  batchName="German A1 - Live Class"
-                  userRole="student"
-                  isActive={true}
-                  onMeetingJoin={() => console.log('Joined German A1 live class')}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                />
-              </div>
+          {liveClasses.length === 0 ? (
+            <div className="text-center py-8">
+              <Video className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">No live classes at the moment</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Check back later or view your schedule</p>
             </div>
-
-            {/* English Class */}
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
-                  <Video className="h-6 w-6 text-white" />
+          ) : (
+            <div className="space-y-4">
+              {liveClasses.map((classItem, index) => (
+                <div key={classItem._id} className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
+                      <Video className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">
+                        {classItem.course?.displayName || classItem.course?.name || `${classItem.course?.language} ${classItem.course?.level}`} - Live Class
+                      </h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <Clock className="h-4 w-4 inline mr-1" />
+                        {classItem.meetingSchedule?.time?.start || '10:00 AM'} - {classItem.meetingSchedule?.time?.end || '11:30 AM'}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <Users className="h-3 w-3 inline mr-1" />
+                        Instructor: {classItem.instructor?.name || 'TBA'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end space-y-2">
+                    <div className="flex items-center space-x-2 text-green-600">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-medium">Live Now</span>
+                    </div>
+                    <JitsiMeetButtonCompact
+                      batchId={classItem._id}
+                      meetingUrl={classItem.meeting?.meetingUrl}
+                      userRole="student"
+                      isActive={true}
+                      onMeetingJoin={() => console.log('Joined live class:', classItem.course?.displayName)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white">English Intermediate - Live Class</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <Clock className="h-4 w-4 inline mr-1" />
-                    2:00 PM - 3:30 PM
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    <Users className="h-3 w-3 inline mr-1" />
-                    Instructor: John Smith
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col items-end space-y-2">
-                <div className="flex items-center space-x-2 text-blue-600">
-                  <Clock className="h-4 w-4" />
-                  <span className="text-sm font-medium">Starting Soon</span>
-                </div>
-                <JitsiMeetButton
-                  batchId="english-intermediate-batch-1"
-                  batchName="English Intermediate - Live Class"
-                  userRole="student"
-                  isActive={false}
-                  onMeetingJoin={() => console.log('Joined English live class')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                />
-              </div>
+              ))}
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -8,12 +8,13 @@ export async function POST(req) {
     await connectToDB();
 
     const userRole = req.headers.get("X-User-Role");
+    const userId = req.headers.get("X-User-Id");
 
     if (!authorize("trainer", userRole)) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    const { title, fileUrl, type, course, batch } = await req.json();
+    const { title, description, fileUrl, type, course, batch } = await req.json();
 
     if (!title || !fileUrl) {
       return NextResponse.json(
@@ -31,10 +32,15 @@ export async function POST(req) {
 
     const material = await Material.create({
       title,
+      description: description || "",
       fileUrl,
-      type,
+      type: type || "pdf",
       course,
       batch,
+      uploadedBy: userId,
+      status: "published",
+      size: "",
+      downloads: 0,
     });
 
     return NextResponse.json({ material }, { status: 201 });

@@ -36,7 +36,7 @@ export default function TrainerMaterialsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterBatch, setFilterBatch] = useState('all');
-  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showUploadSection, setShowUploadSection] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   // Upload form state
@@ -66,99 +66,16 @@ export default function TrainerMaterialsPage() {
           const materialsData = await materialsResponse.json();
           setMaterials(materialsData.materials || []);
         } else {
-          // Mock data for now
-          setMaterials([
-            {
-              _id: '1',
-              title: 'React Components Guide',
-              description: 'Comprehensive guide to React components and their lifecycle methods',
-              type: 'pdf',
-              fileUrl: '/materials/react-components.pdf',
-              batch: {
-                _id: 'batch1',
-                name: 'React Fundamentals - Batch A',
-                course: { title: 'React Fundamentals' }
-              },
-              uploadedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-              size: '2.5 MB',
-              downloads: 45,
-              status: 'published'
-            },
-            {
-              _id: '2',
-              title: 'JavaScript Async Programming Video',
-              description: 'Video tutorial covering promises, async/await, and error handling',
-              type: 'video',
-              fileUrl: 'https://youtube.com/watch?v=example',
-              batch: {
-                _id: 'batch2',
-                name: 'JavaScript Advanced - Batch B',
-                course: { title: 'JavaScript Advanced' }
-              },
-              uploadedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-              size: '45 min',
-              downloads: 32,
-              status: 'published'
-            },
-            {
-              _id: '3',
-              title: 'Project Requirements Document',
-              description: 'Detailed requirements for the final project',
-              type: 'doc',
-              fileUrl: '/materials/project-requirements.docx',
-              batch: {
-                _id: 'batch1',
-                name: 'React Fundamentals - Batch A',
-                course: { title: 'React Fundamentals' }
-              },
-              uploadedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-              size: '1.2 MB',
-              downloads: 28,
-              status: 'published'
-            },
-            {
-              _id: '4',
-              title: 'Useful Resources and Links',
-              description: 'Collection of useful JavaScript resources and documentation',
-              type: 'link',
-              fileUrl: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript',
-              batch: {
-                _id: 'batch2',
-                name: 'JavaScript Advanced - Batch B',
-                course: { title: 'JavaScript Advanced' }
-              },
-              uploadedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-              size: 'External',
-              downloads: 67,
-              status: 'published'
-            },
-            {
-              _id: '5',
-              title: 'Draft: Advanced React Patterns',
-              description: 'Work in progress - advanced React patterns and best practices',
-              type: 'pdf',
-              fileUrl: '/materials/advanced-react-patterns.pdf',
-              batch: {
-                _id: 'batch1',
-                name: 'React Fundamentals - Batch A',
-                course: { title: 'React Fundamentals' }
-              },
-              uploadedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-              size: '3.1 MB',
-              downloads: 0,
-              status: 'draft'
-            }
-          ]);
+          console.error('Failed to fetch materials:', materialsResponse.status);
+          setMaterials([]);
         }
         
         if (batchesResponse.ok) {
           const batchesData = await batchesResponse.json();
           setBatches(batchesData.batches || []);
         } else {
-          setBatches([
-            { _id: 'batch1', name: 'React Fundamentals - Batch A', course: { title: 'React Fundamentals' } },
-            { _id: 'batch2', name: 'JavaScript Advanced - Batch B', course: { title: 'JavaScript Advanced' } }
-          ]);
+          console.error('Failed to fetch batches:', batchesResponse.status);
+          setBatches([]);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -239,7 +156,7 @@ export default function TrainerMaterialsPage() {
       if (response.ok) {
         const newMaterial = await response.json();
         setMaterials([newMaterial.material, ...materials]);
-        setShowUploadModal(false);
+        setShowUploadSection(false);
         setUploadData({
           title: '',
           description: '',
@@ -289,7 +206,7 @@ export default function TrainerMaterialsPage() {
   });
 
   const materialsByBatch = filteredMaterials.reduce((acc, material) => {
-    const batchName = material.batch.name;
+    const batchName = material.batch?.name || material.batch?.course?.displayName || 'Unknown Batch';
     if (!acc[batchName]) {
       acc[batchName] = [];
     }
@@ -331,11 +248,11 @@ export default function TrainerMaterialsPage() {
           </p>
         </div>
         <Button 
-          onClick={() => setShowUploadModal(true)}
+          onClick={() => setShowUploadSection(!showUploadSection)}
           className="bg-blue-600 hover:bg-blue-700"
         >
           <Upload className="h-4 w-4 mr-2" />
-          Upload Material
+          {showUploadSection ? 'Cancel Upload' : 'Upload Material'}
         </Button>
       </div>
 
@@ -387,18 +304,21 @@ export default function TrainerMaterialsPage() {
         </Card>
       </div>
 
-      {/* Upload Modal */}
-      {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>Upload New Material</CardTitle>
-              <CardDescription>
-                Add a new material to your course
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleUpload} className="space-y-4">
+      {/* Inline Upload Section */}
+      {showUploadSection && (
+        <Card className="border-2 border-blue-200 dark:border-blue-800">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Plus className="h-5 w-5 mr-2 text-blue-600" />
+              Upload New Material
+            </CardTitle>
+            <CardDescription>
+              Add a new material to your course
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUpload} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="title">Title</Label>
                   <Input
@@ -407,18 +327,6 @@ export default function TrainerMaterialsPage() {
                     onChange={(e) => setUploadData({...uploadData, title: e.target.value})}
                     placeholder="Enter material title"
                     required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <textarea
-                    id="description"
-                    value={uploadData.description}
-                    onChange={(e) => setUploadData({...uploadData, description: e.target.value})}
-                    placeholder="Enter material description"
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 
@@ -436,56 +344,68 @@ export default function TrainerMaterialsPage() {
                     <option value="link">Link</option>
                   </select>
                 </div>
-                
-                <div>
-                  <Label htmlFor="fileUrl">File URL or Link</Label>
-                  <Input
-                    id="fileUrl"
-                    value={uploadData.fileUrl}
-                    onChange={(e) => setUploadData({...uploadData, fileUrl: e.target.value})}
-                    placeholder="Enter file URL or upload link"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="batch">Batch</Label>
-                  <select
-                    id="batch"
-                    value={uploadData.batch}
-                    onChange={(e) => setUploadData({...uploadData, batch: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Select a batch</option>
-                    {batches.map(batch => (
-                      <option key={batch._id} value={batch._id}>
-                        {batch.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="flex gap-2 pt-4">
-                  <Button 
-                    type="submit" 
-                    disabled={uploading}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700"
-                  >
-                    {uploading ? 'Uploading...' : 'Upload'}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={() => setShowUploadModal(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <textarea
+                  id="description"
+                  value={uploadData.description}
+                  onChange={(e) => setUploadData({...uploadData, description: e.target.value})}
+                  placeholder="Enter material description"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="fileUrl">File URL or Link</Label>
+                <Input
+                  id="fileUrl"
+                  value={uploadData.fileUrl}
+                  onChange={(e) => setUploadData({...uploadData, fileUrl: e.target.value})}
+                  placeholder="Enter file URL or upload link"
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="batch">Batch</Label>
+                <select
+                  id="batch"
+                  value={uploadData.batch}
+                  onChange={(e) => setUploadData({...uploadData, batch: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select a batch</option>
+                  {batches.map(batch => (
+                    <option key={batch._id} value={batch._id}>
+                      {batch.course?.displayName || batch.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  type="submit" 
+                  disabled={uploading}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  {uploading ? 'Uploading...' : 'Upload Material'}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => setShowUploadSection(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       {/* Search and Filters */}
@@ -529,7 +449,7 @@ export default function TrainerMaterialsPage() {
                 <option value="all">All Batches</option>
                 {batches.map(batch => (
                   <option key={batch._id} value={batch._id}>
-                    {batch.name}
+                    {batch.course?.displayName || batch.name}
                   </option>
                 ))}
               </select>

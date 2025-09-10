@@ -47,8 +47,10 @@ export async function GET(req) {
     // Get student's progress records
     const progressRecords = await Progress.find({ student: actualUserId });
     
-    // Get student's batches
-    const studentBatches = await Batch.find({ students: actualUserId });
+    // Get student's batches through enrollments
+    const studentBatches = await Batch.find({ 
+      _id: { $in: enrollments.map(e => e.batch) } 
+    });
 
     // Calculate stats
     const enrolledCourses = enrollments.length;

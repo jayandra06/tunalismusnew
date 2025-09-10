@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import Batch from "../../../../models/Batch";
 import Course from "../../../../models/Course";
 import { connectToDB } from "../../../../lib/mongodb";
@@ -11,13 +12,40 @@ export async function GET(req) {
     const userRole = req.headers.get("X-User-Role");
     const userId = req.headers.get("X-User-Id");
 
+    // Fallback authentication if headers are missing
+    let actualUserRole = userRole;
+    let actualUserId = userId;
+
+    if (!userRole || !userId) {
+      console.log("⚠️ No X-User-Role or X-User-Id header found, trying direct token check...");
+      const token = await getToken({ 
+        req, 
+        secret: process.env.NEXTAUTH_SECRET 
+      });
+
+      if (token) {
+        actualUserRole = token.role;
+        actualUserId = token.sub;
+        console.log(`✅ Got role from direct token: ${actualUserRole}`);
+      } else {
+        console.log("❌ No valid token found");
+        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      }
+    }
+
     // Only students can access this route
-    if (!authorize("student", userRole)) {
+    if (!authorize("student", actualUserRole)) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    // Find all batches the student is in
-    const studentBatches = await Batch.find({ students: userId }).populate('course', 'title');
+    // Find all batches the student is in through enrollments
+    const Enrollment = require("../../../../models/Enrollment").default;
+    const enrollments = await Enrollment.find({ 
+      student: actualUserId, 
+      status: { $in: ['enrolled', 'active'] } 
+    }).populate('batch');
+    
+    const studentBatches = enrollments.map(enrollment => enrollment.batch);
 
     // For now, return mock session data since we don't have a Meeting/Session model
     // In a real implementation, you would query a Meeting or Session model

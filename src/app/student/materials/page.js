@@ -34,20 +34,14 @@ export default function StudentMaterialsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        
         // Fetch materials
         const materialsResponse = await fetch('/api/student/materials', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          credentials: 'include'
         });
         
         // Fetch courses for filtering
-        const coursesResponse = await fetch('/api/student/courses', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        const coursesResponse = await fetch('/api/student/batches', {
+          credentials: 'include'
         });
         
         if (materialsResponse.ok) {
