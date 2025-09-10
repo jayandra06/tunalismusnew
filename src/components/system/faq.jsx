@@ -20,7 +20,7 @@ const faqs = [
   {
     question: "Will I receive personal feedback?",
     answer:
-      "Absolutely. Feedback is core to growth and confidence — expect guidance, encouragement, and actionable tips from your instructor.",
+      "Absolutely. Feedback is core to growth and confidence — expect guidance, encouragement, and actionable tips from me.",
   },
   {
     question: "Can I book a trial lesson?",
