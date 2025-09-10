@@ -155,7 +155,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="bg-[var(--color-warm-zinc)] bg-opacity-10 dark:bg-zinc-800 p-6 rounded-2xl">
-                  <h3 className="text-xl font-bold text-[var(--color-muted-zinc)] dark:text-[var(--color-muted-zinc-light)] mb-4">Our My Promise to You</h3>
+                  <h3 className="text-xl font-bold text-[var(--color-muted-zinc)] dark:text-[var(--color-muted-zinc-light)] mb-4">My Promise to You</h3>
                   <ul className="space-y-4">
                     {[
                       {
@@ -234,7 +234,7 @@ export default function HomePage() {
                 Language Learning, Designed for Real Life
               </h1>
               <p className="text-zinc-700 dark:text-zinc-300 max-w-3xl mx-auto md:text-xl">
-                When you learn with me, it's never just about grammar—it's about connection, confidence, and being truly understood in the world.
+                When you learn with me, it's never just about grammar—it's about connection, confidence, and being truly understood.
               </p>
             </div>
             <div className="grid gap-14 md:grid-cols-2 lg:grid-cols-4 lg:items-center">

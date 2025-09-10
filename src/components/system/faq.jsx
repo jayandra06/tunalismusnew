@@ -10,7 +10,7 @@ const faqs = [
   {
     question: "Are classes online or in-person?",
     answer:
-      "We offer flexible learning options including online classes accessible worldwide and in-person sessions in Hyderabad.",
+      "I offer flexible learning options including online classes accessible worldwide and in-person sessions in Hyderabad.",
   },
   {
     question: "How are lessons structured?",
@@ -20,17 +20,17 @@ const faqs = [
   {
     question: "Will I receive personal feedback?",
     answer:
-      "Absolutely. Feedback is core to growth and confidence — expect guidance, encouragement, and actionable tips from your instructor.",
+      "Absolutely. Feedback is core to growth and confidence — expect guidance, encouragement, and actionable tips from me.",
   },
   {
     question: "Can I book a trial lesson?",
     answer:
-      "Yes! We offer free introductory sessions so you can experience Tunalismus learning before committing.",
+      "Yes! I offer free introductory sessions so you can experience Tunalismus learning before committing.",
   },
   {
     question: "Which languages do you teach?",
     answer:
-      "Currently, we offer courses in German, Turkish, and English — all rooted in practical and human-centered teaching methods.",
+      "Currently, I offer courses in German, Turkish, and English — all rooted in practical teaching methods.",
   },
 ];
 
