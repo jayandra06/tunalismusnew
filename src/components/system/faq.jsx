@@ -30,7 +30,7 @@ const faqs = [
   {
     question: "Which languages do you teach?",
     answer:
-      "Currently, we offer courses in German, Turkish, and English — all rooted in practical teaching methods.",
+      "Currently, I offer courses in German, Turkish, and English — all rooted in practical teaching methods.",
   },
 ];
 
