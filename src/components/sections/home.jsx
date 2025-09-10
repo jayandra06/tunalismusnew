@@ -155,7 +155,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="bg-[var(--color-warm-zinc)] bg-opacity-10 dark:bg-zinc-800 p-6 rounded-2xl">
-                  <h3 className="text-xl font-bold text-[var(--color-muted-zinc)] dark:text-[var(--color-muted-zinc-light)] mb-4">Our My Promise to You</h3>
+                  <h3 className="text-xl font-bold text-[var(--color-muted-zinc)] dark:text-[var(--color-muted-zinc-light)] mb-4">My Promise to You</h3>
                   <ul className="space-y-4">
                     {[
                       {
