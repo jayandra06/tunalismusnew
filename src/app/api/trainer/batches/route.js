@@ -36,7 +36,17 @@ export async function GET(req) {
 
     // Only trainers can access this route
     if (!authorize("trainer", userRole)) {
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+      console.log('❌ Authorization failed:', { userRole, requiredRole: 'trainer' });
+      return NextResponse.json({ 
+        message: "Forbidden",
+        debug: {
+          userRole,
+          userId,
+          hasToken: !!userRole,
+          environment: process.env.NODE_ENV,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 403 });
     }
 
     // Find all batches assigned to this trainer (using instructor field)
