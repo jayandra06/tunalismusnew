@@ -48,6 +48,7 @@ export const authOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   cookies: {
     sessionToken: {
@@ -56,26 +57,58 @@ export const authOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production'
+        secure: process.env.NODE_ENV === 'production',
+        domain: process.env.NODE_ENV === 'production' ? '.tunalismus.in' : undefined
+      }
+    },
+    callbackUrl: {
+      name: `next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        domain: process.env.NODE_ENV === 'production' ? '.tunalismus.in' : undefined
+      }
+    },
+    csrfToken: {
+      name: `next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        domain: process.env.NODE_ENV === 'production' ? '.tunalismus.in' : undefined
       }
     }
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
+      console.log('🔑 JWT callback - user:', user ? { id: user.id, role: user.role, email: user.email } : 'no user');
+      console.log('🔑 JWT callback - token before:', { sub: token.sub, role: token.role, email: token.email });
+      
       if (user) {
         token.role = user.role;
         token.id = user.id;
-        console.log('🔑 JWT callback - user:', { id: user.id, role: user.role });
+        token.email = user.email;
+        token.name = user.name;
       }
-      console.log('🔑 JWT callback - token:', { sub: token.sub, role: token.role });
+      
+      console.log('🔑 JWT callback - token after:', { sub: token.sub, role: token.role, email: token.email });
       return token;
     },
     async session({ session, token }) {
+      console.log('📋 Session callback - token:', { sub: token.sub, role: token.role, email: token.email });
+      console.log('📋 Session callback - session before:', { userId: session.user?.id, role: session.user?.role, email: session.user?.email });
+      
       if (token) {
         session.user.id = token.sub || token.id;
         session.user.role = token.role;
-        console.log('📋 Session callback - session:', { userId: session.user.id, role: session.user.role });
+        session.user.email = token.email;
+        session.user.name = token.name;
       }
+      
+      console.log('📋 Session callback - session after:', { userId: session.user?.id, role: session.user?.role, email: session.user?.email });
       return session;
     },
   },
