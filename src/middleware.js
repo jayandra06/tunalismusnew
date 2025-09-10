@@ -6,6 +6,21 @@ export async function middleware(req) {
   
   console.log('🔍 Middleware triggered for:', pathname);
   
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+          ? 'https://tunalismus.in' 
+          : 'http://localhost:3000',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-User-Id, X-User-Role',
+        'Access-Control-Allow-Credentials': 'true',
+      },
+    });
+  }
+  
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   const publicPaths = [
