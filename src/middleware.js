@@ -3,6 +3,9 @@ import { getToken } from "next-auth/jwt";
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
+  
+  console.log('🔍 Middleware triggered for:', pathname);
+  
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   const publicPaths = [
@@ -66,7 +69,8 @@ export async function middleware(req) {
     console.log('🔧 Setting headers:', {
       'X-User-Id': token.sub,
       'X-User-Role': token.role,
-      'HeaderCount': requestHeaders.size
+      'HeaderCount': requestHeaders.size,
+      'pathname': pathname
     });
 
     return NextResponse.next({

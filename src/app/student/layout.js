@@ -13,7 +13,8 @@ import {
   LogOut,
   Menu,
   X,
-  User
+  User,
+  Video
 } from "lucide-react";
 import Link from "next/link";
 
@@ -53,6 +54,7 @@ export default function StudentLayout({ children }) {
 
   const navigation = [
     { name: "Dashboard", href: "/student/dashboard", icon: BarChart3 },
+    { name: "Join Class", href: "/student/join-class", icon: Video },
     { name: "My Courses", href: "/student/courses", icon: BookOpen },
     { name: "Schedule", href: "/student/schedule", icon: Calendar },
     { name: "Materials", href: "/student/materials", icon: FileText },

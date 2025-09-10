@@ -11,9 +11,12 @@ import {
   CheckCircle,
   Play,
   Eye,
-  Download
+  Download,
+  Video,
+  Users
 } from "lucide-react";
 import Link from "next/link";
+import JitsiMeetButton from "@/components/ui/jitsi-meet-button";
 
 export default function StudentDashboard() {
   const [stats, setStats] = useState({
@@ -219,33 +222,79 @@ export default function StudentDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {/* German A1 Course */}
               <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
                     <BookOpen className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">React Fundamentals</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">German A1</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Progress: 75%</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm">
-                  <Play className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-2">
+                  <JitsiMeetButton
+                    batchId="german-a1-batch-1"
+                    batchName="German A1 - Batch 1"
+                    userRole="student"
+                    onMeetingJoin={() => console.log('Joined German A1 class')}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  />
+                  <Button variant="outline" size="sm">
+                    <Play className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
+              
+              {/* German B1 Course */}
               <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center">
                     <BookOpen className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">JavaScript Advanced</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">German B1</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Progress: 45%</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm">
-                  <Play className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-2">
+                  <JitsiMeetButton
+                    batchId="german-b1-batch-1"
+                    batchName="German B1 - Batch 1"
+                    userRole="student"
+                    onMeetingJoin={() => console.log('Joined German B1 class')}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  />
+                  <Button variant="outline" size="sm">
+                    <Play className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              {/* English Course */}
+              <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">English Intermediate</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Progress: 60%</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <JitsiMeetButton
+                    batchId="english-intermediate-batch-1"
+                    batchName="English Intermediate - Batch 1"
+                    userRole="student"
+                    onMeetingJoin={() => console.log('Joined English class')}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  />
+                  <Button variant="outline" size="sm">
+                    <Play className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -287,6 +336,90 @@ export default function StudentDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Today's Classes */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Video className="h-5 w-5 mr-2 text-green-600" />
+            Today's Classes
+          </CardTitle>
+          <CardDescription>
+            Your live classes for today
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* German A1 Class */}
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
+                  <Video className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">German A1 - Live Class</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <Clock className="h-4 w-4 inline mr-1" />
+                    10:00 AM - 11:30 AM
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <Users className="h-3 w-3 inline mr-1" />
+                    Instructor: Maria Schmidt
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col items-end space-y-2">
+                <div className="flex items-center space-x-2 text-green-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">Live Now</span>
+                </div>
+                <JitsiMeetButton
+                  batchId="german-a1-batch-1"
+                  batchName="German A1 - Live Class"
+                  userRole="student"
+                  isActive={true}
+                  onMeetingJoin={() => console.log('Joined German A1 live class')}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                />
+              </div>
+            </div>
+
+            {/* English Class */}
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
+                  <Video className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">English Intermediate - Live Class</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <Clock className="h-4 w-4 inline mr-1" />
+                    2:00 PM - 3:30 PM
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <Users className="h-3 w-3 inline mr-1" />
+                    Instructor: John Smith
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col items-end space-y-2">
+                <div className="flex items-center space-x-2 text-blue-600">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-sm font-medium">Starting Soon</span>
+                </div>
+                <JitsiMeetButton
+                  batchId="english-intermediate-batch-1"
+                  batchName="English Intermediate - Live Class"
+                  userRole="student"
+                  isActive={false}
+                  onMeetingJoin={() => console.log('Joined English live class')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

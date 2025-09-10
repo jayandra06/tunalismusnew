@@ -19,6 +19,7 @@ import {
   XCircle
 } from "lucide-react";
 import Link from "next/link";
+import JitsiMeetButton from "@/components/ui/jitsi-meet-button";
 
 export default function BatchDetailsPage() {
   const { data: session, status } = useSession();
@@ -208,6 +209,29 @@ export default function BatchDetailsPage() {
           </div>
         </div>
         <div className="flex items-center space-x-3">
+          {/* Meeting Button */}
+          <JitsiMeetButton
+            batchId={batch._id}
+            batchName={batch.course?.displayName || batch.course?.name || `${batch.course?.language} ${batch.course?.level}`}
+            meetingUrl={batch.meeting?.meetingUrl}
+            roomPassword={batch.meeting?.roomPassword}
+            isActive={batch.meeting?.isActive}
+            userRole="admin"
+            onMeetingStart={() => {
+              // Refresh batch to update status
+              fetchBatch();
+            }}
+            onMeetingEnd={() => {
+              // Refresh batch to update status
+              fetchBatch();
+            }}
+            onMeetingJoin={() => {
+              // Optional: Log meeting join
+              console.log('Admin joined meeting for batch:', batch._id);
+            }}
+            className="min-w-[200px]"
+          />
+          
           <Button 
             variant="outline"
             onClick={() => router.push(`/admin/batches/${params.batchId}/edit`)}

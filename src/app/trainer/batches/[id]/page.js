@@ -26,6 +26,7 @@ import {
   Video
 } from "lucide-react";
 import Link from "next/link";
+import JitsiMeetButton from "@/components/ui/jitsi-meet-button";
 
 export default function BatchDetailsPage() {
   const params = useParams();
@@ -37,51 +38,39 @@ export default function BatchDetailsPage() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
-  useEffect(() => {
-    const fetchBatchData = async () => {
+  const fetchBatchData = async () => {
       try {
-        const token = localStorage.getItem('token');
         const batchId = params.id;
         
-        // Fetch batch details
-        const batchResponse = await fetch(`/api/batches/${batchId}`, {
+        // Fetch batch details from trainer batches API
+        const batchResponse = await fetch(`/api/trainer/batches`, {
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-store'
         });
         
         if (batchResponse.ok) {
           const batchData = await batchResponse.json();
-          setBatch(batchData.batch);
+          // Find the specific batch
+          const specificBatch = batchData.batches?.find(b => b._id === batchId);
+          if (specificBatch) {
+            setBatch(specificBatch);
+          } else {
+            setError('Batch not found');
+          }
         } else {
-          // Mock data for now
-          setBatch({
-            _id: batchId,
-            name: 'React Fundamentals - Batch A',
-            course: {
-              _id: 'course1',
-              title: 'React Fundamentals',
-              description: 'Learn the basics of React development'
-            },
-            startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            maxStudents: 25,
-            schedule: 'Mon, Wed, Fri 10:00 AM - 12:00 PM',
-            location: 'Online - Zoom',
-            type: 'regular',
-            status: 'active',
-            progress: 65,
-            totalSessions: 20,
-            completedSessions: 13,
-            description: 'This batch covers React fundamentals including components, props, state, and lifecycle methods.'
-          });
+          setError('Failed to fetch batch data');
         }
 
         // Fetch students
         const studentsResponse = await fetch(`/api/trainer/students`, {
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-store'
         });
         
         if (studentsResponse.ok) {
@@ -90,55 +79,17 @@ export default function BatchDetailsPage() {
           const batchStudents = studentsData.students?.filter(s => s.batch._id === batchId) || [];
           setStudents(batchStudents);
         } else {
-          // Mock data
-          setStudents([
-            {
-              _id: '1',
-              name: 'John Doe',
-              email: 'john@example.com',
-              phone: '+1 (555) 123-4567',
-              progress: 75,
-              attendance: 85,
-              assignments: { completed: 8, total: 10 },
-              lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000),
-              status: 'active',
-              joinDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-              performance: 'excellent'
-            },
-            {
-              _id: '2',
-              name: 'Jane Smith',
-              email: 'jane@example.com',
-              phone: '+1 (555) 234-5678',
-              progress: 60,
-              attendance: 90,
-              assignments: { completed: 6, total: 10 },
-              lastActivity: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-              status: 'active',
-              joinDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
-              performance: 'good'
-            },
-            {
-              _id: '3',
-              name: 'Mike Johnson',
-              email: 'mike@example.com',
-              phone: '+1 (555) 345-6789',
-              progress: 45,
-              attendance: 70,
-              assignments: { completed: 4, total: 10 },
-              lastActivity: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-              status: 'at-risk',
-              joinDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-              performance: 'needs-improvement'
-            }
-          ]);
+          console.error('Failed to fetch students');
+          setStudents([]);
         }
 
         // Fetch sessions
         const sessionsResponse = await fetch(`/api/trainer/schedule`, {
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-store'
         });
         
         if (sessionsResponse.ok) {
@@ -147,33 +98,8 @@ export default function BatchDetailsPage() {
           const batchSessions = sessionsData.sessions?.filter(s => s.batch._id === batchId) || [];
           setSessions(batchSessions);
         } else {
-          // Mock data
-          setSessions([
-            {
-              _id: '1',
-              title: 'React Components Deep Dive',
-              type: 'lecture',
-              date: new Date(Date.now() + 24 * 60 * 60 * 1000),
-              startTime: '10:00',
-              endTime: '12:00',
-              duration: 120,
-              location: 'Online - Zoom',
-              status: 'scheduled',
-              description: 'Learn about React components, props, and state management'
-            },
-            {
-              _id: '2',
-              title: 'Project Review Session',
-              type: 'review',
-              date: new Date(Date.now() - 24 * 60 * 60 * 1000),
-              startTime: '15:00',
-              endTime: '16:30',
-              duration: 90,
-              location: 'Online - Zoom',
-              status: 'completed',
-              description: 'Review of student projects and feedback session'
-            }
-          ]);
+          console.error('Failed to fetch sessions');
+          setSessions([]);
         }
       } catch (error) {
         console.error('Error fetching batch data:', error);
@@ -183,6 +109,7 @@ export default function BatchDetailsPage() {
       }
     };
 
+  useEffect(() => {
     fetchBatchData();
   }, [params.id]);
 
@@ -274,11 +201,33 @@ export default function BatchDetailsPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{batch.name}</h1>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
-              {batch.course.title} • {batch.type.charAt(0).toUpperCase() + batch.type.slice(1)} Batch
+              {batch.course?.displayName || batch.course?.name || 'Unknown Course'} • {batch.type?.charAt(0).toUpperCase() + batch.type?.slice(1) || 'Regular'} Batch
             </p>
           </div>
         </div>
         <div className="flex gap-2">
+          {/* Meeting Button */}
+          <JitsiMeetButton
+            batchId={batch._id}
+            batchName={batch.course?.displayName || batch.course?.name || `${batch.course?.language} ${batch.course?.level}`}
+            meetingUrl={batch.meeting?.meetingUrl}
+            roomPassword={batch.meeting?.roomPassword}
+            isActive={batch.meeting?.isActive}
+            userRole="trainer"
+            onMeetingStart={() => {
+              // Refresh batch to update status
+              fetchBatchData();
+            }}
+            onMeetingEnd={() => {
+              // Refresh batch to update status
+              fetchBatchData();
+            }}
+            onMeetingJoin={() => {
+              console.log('Trainer joined meeting for batch:', batch._id);
+            }}
+            className="min-w-[200px]"
+          />
+          
           <Button variant="outline">
             <Edit className="h-4 w-4 mr-2" />
             Edit Batch
@@ -289,6 +238,40 @@ export default function BatchDetailsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Meeting Information */}
+      <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-lg bg-blue-600 flex items-center justify-center">
+                <Video className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Live Class</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Room: {batch.meeting?.roomName || batch.course?.displayName || batch.course?.name || 'German A1 Sep 2025'}
+                </p>
+                {(batch.meeting?.roomPassword || '242F281E') && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Password: {batch.meeting?.roomPassword || '242F281E'}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              {batch.meeting?.isActive ? (
+                <div className="flex items-center space-x-2 text-green-600">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">Live</span>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500">Ready to start</div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Batch Status and Progress */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -304,22 +287,22 @@ export default function BatchDetailsPage() {
         </Card>
         <Card>
           <CardContent className="p-6">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{batch.progress}%</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{averageProgress}%</div>
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Progress</p>
-            <Progress value={batch.progress} className="h-2 mt-2" />
+            <Progress value={averageProgress} className="h-2 mt-2" />
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-gray-900 dark:text-white">{students.length}</div>
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Students</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Max: {batch.maxStudents}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Max: {batch.maxStudents || 'N/A'}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {batch.completedSessions}/{batch.totalSessions}
+              {sessions.filter(s => s.status === 'completed').length}/{sessions.length}
             </div>
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Sessions</p>
           </CardContent>
@@ -365,24 +348,24 @@ export default function BatchDetailsPage() {
             <CardContent className="space-y-4">
               <div>
                 <h4 className="font-medium text-gray-900 dark:text-white">Description</h4>
-                <p className="text-gray-600 dark:text-gray-400">{batch.description}</p>
+                <p className="text-gray-600 dark:text-gray-400">{batch.course?.description || batch.description || 'No description available'}</p>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium text-gray-700 dark:text-gray-300">Start Date:</span>
-                  <p className="text-gray-600 dark:text-gray-400">{formatDate(batch.startDate)}</p>
+                  <p className="text-gray-600 dark:text-gray-400">{batch.startDate ? formatDate(batch.startDate) : 'TBD'}</p>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700 dark:text-gray-300">End Date:</span>
-                  <p className="text-gray-600 dark:text-gray-400">{formatDate(batch.endDate)}</p>
+                  <p className="text-gray-600 dark:text-gray-400">{batch.endDate ? formatDate(batch.endDate) : 'TBD'}</p>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700 dark:text-gray-300">Schedule:</span>
-                  <p className="text-gray-600 dark:text-gray-400">{batch.schedule}</p>
+                  <p className="text-gray-600 dark:text-gray-400">{batch.schedule || 'TBD'}</p>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700 dark:text-gray-300">Location:</span>
-                  <p className="text-gray-600 dark:text-gray-400">{batch.location}</p>
+                  <p className="text-gray-600 dark:text-gray-400">{batch.location || 'Online'}</p>
                 </div>
               </div>
             </CardContent>

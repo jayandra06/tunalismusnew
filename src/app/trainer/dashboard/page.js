@@ -30,11 +30,8 @@ export default function TrainerDashboard() {
     // Fetch trainer dashboard stats
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem('token');
         const response = await fetch('/api/trainer/stats', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          credentials: 'include'
         });
         
         if (response.ok) {

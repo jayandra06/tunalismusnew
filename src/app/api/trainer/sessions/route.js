@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Batch from "../../../../models/Batch";
+import Session from "../../../../models/Session";
 import { connectToDB } from "../../../../lib/mongodb";
 import { authorize } from "../../../../lib/auth";
 
@@ -16,73 +17,67 @@ export async function GET(req) {
     }
 
     // Find all batches assigned to this trainer
-    const trainerBatches = await Batch.find({ trainer: userId })
-      .populate('course', 'title')
-      .populate('students', 'name email');
+    const trainerBatches = await Batch.find({ instructor: userId })
+      .populate('course', 'title name language level')
+      .select('_id name course');
 
-    // For now, return mock session data since we don't have a Meeting/Session model
-    // In a real implementation, you would query a Meeting or Session model
-    const mockSessions = [
-      {
-        _id: '1',
-        title: 'React Components Deep Dive',
-        batch: {
-          _id: trainerBatches[0]?._id || 'batch1',
-          name: trainerBatches[0]?.name || 'React Fundamentals - Batch A',
-          course: { title: trainerBatches[0]?.course?.title || 'React Fundamentals' }
-        },
-        type: 'lecture',
-        date: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-        startTime: '10:00',
-        endTime: '12:00',
-        duration: 120,
-        location: 'Online - Zoom',
-        status: 'scheduled',
-        description: 'Learn about React components, props, and state management',
-        students: trainerBatches[0]?.students?.length || 25,
-        materials: ['React Components Guide.pdf', 'Component Examples.zip']
-      },
-      {
-        _id: '2',
-        title: 'JavaScript Async Programming Workshop',
-        batch: {
-          _id: trainerBatches[1]?._id || 'batch2',
-          name: trainerBatches[1]?.name || 'JavaScript Advanced - Batch B',
-          course: { title: trainerBatches[1]?.course?.title || 'JavaScript Advanced' }
-        },
-        type: 'workshop',
-        date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // Day after tomorrow
-        startTime: '14:00',
-        endTime: '17:00',
-        duration: 180,
-        location: 'Classroom 101',
-        status: 'scheduled',
-        description: 'Hands-on workshop on promises, async/await, and error handling',
-        students: trainerBatches[1]?.students?.length || 18,
-        materials: ['Async Programming Guide.pdf', 'Workshop Exercises.zip']
-      },
-      {
-        _id: '3',
-        title: 'Project Review Session',
-        batch: {
-          _id: trainerBatches[0]?._id || 'batch1',
-          name: trainerBatches[0]?.name || 'React Fundamentals - Batch A',
-          course: { title: trainerBatches[0]?.course?.title || 'React Fundamentals' }
-        },
-        type: 'review',
-        date: new Date(Date.now() - 24 * 60 * 60 * 1000), // Yesterday
-        startTime: '15:00',
-        endTime: '16:30',
-        duration: 90,
-        location: 'Online - Zoom',
-        status: 'completed',
-        description: 'Review of student projects and feedback session',
-        students: trainerBatches[0]?.students?.length || 25,
-        materials: ['Project Guidelines.pdf']
+    // Get all sessions for the trainer's batches
+    const batchIds = trainerBatches.map(batch => batch._id);
+    const sessions = await Session.find({ batch: { $in: batchIds } })
+      .populate('batch', 'name course')
+      .populate('batch.course', 'title name language level')
+      .populate('attendance.student', 'name email')
+      .sort({ date: 1, startTime: 1 });
+
+    // Format sessions for frontend
+    const formattedSessions = sessions.map(session => {
+      const batch = session.batch;
+      const course = batch.course;
+      
+      // Generate display name for the course
+      let courseDisplayName = course.name || course.title;
+      if (!courseDisplayName && course.language && course.level) {
+        const monthNames = [
+          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        ];
+        courseDisplayName = `${course.language} ${course.level} ${monthNames[course.month - 1]} ${course.year}`;
       }
-    ];
 
-    return NextResponse.json({ sessions: mockSessions }, { status: 200 });
+      return {
+        _id: session._id,
+        title: session.title,
+        batch: {
+          _id: batch._id,
+          name: batch.name,
+          course: { 
+            title: courseDisplayName || 'Course',
+            name: course.name,
+            language: course.language,
+            level: course.level
+          }
+        },
+        type: session.type,
+        date: session.date,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        duration: session.duration,
+        location: session.location,
+        status: session.status,
+        description: session.description,
+        students: session.attendance.length,
+        materials: session.materials.map(m => m.name),
+        objectives: session.objectives,
+        isOnline: session.isOnline,
+        meetingUrl: session.meetingUrl,
+        attendance: session.attendance,
+        trainerNotes: session.trainerNotes,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt
+      };
+    });
+
+    return NextResponse.json({ sessions: formattedSessions }, { status: 200 });
   } catch (error) {
     console.error("Error in GET /api/trainer/sessions:", error);
     return NextResponse.json(
@@ -116,7 +111,7 @@ export async function POST(req) {
     }
 
     // Verify batch exists and belongs to trainer
-    const batch = await Batch.findById(batchId).populate('course', 'title');
+    const batch = await Batch.findById(batchId).populate('course', 'title name language level');
     if (!batch) {
       return NextResponse.json(
         { message: "Batch not found" },
@@ -124,23 +119,17 @@ export async function POST(req) {
       );
     }
 
-    if (batch.trainer.toString() !== userId) {
+    if (batch.instructor.toString() !== userId) {
       return NextResponse.json(
         { message: "Access denied" },
         { status: 403 }
       );
     }
 
-    // For now, return a mock session since we don't have a Session model
-    // In a real implementation, you would create a new Session document
-    const newSession = {
-      _id: Date.now().toString(),
+    // Create new session
+    const newSession = new Session({
       title,
-      batch: {
-        _id: batch._id,
-        name: batch.name,
-        course: batch.course
-      },
+      batch: batchId,
       type,
       date: new Date(date),
       startTime,
@@ -149,15 +138,68 @@ export async function POST(req) {
       location,
       status: 'scheduled',
       description: description || '',
-      students: batch.students.length,
-      materials: materials || [],
-      createdAt: new Date()
+      materials: materials ? materials.map(m => ({
+        name: m,
+        type: 'document'
+      })) : [],
+      isOnline: location.toLowerCase().includes('online') || location.toLowerCase().includes('zoom') || location.toLowerCase().includes('meet')
+    });
+
+    await newSession.save();
+
+    // Populate the session for response
+    await newSession.populate([
+      { path: 'batch', select: 'name course' },
+      { path: 'batch.course', select: 'title name language level' }
+    ]);
+
+    // Format response
+    const course = newSession.batch.course;
+    let courseDisplayName = course.name || course.title;
+    if (!courseDisplayName && course.language && course.level) {
+      const monthNames = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      courseDisplayName = `${course.language} ${course.level} ${monthNames[course.month - 1]} ${course.year}`;
+    }
+
+    const formattedSession = {
+      _id: newSession._id,
+      title: newSession.title,
+      batch: {
+        _id: newSession.batch._id,
+        name: newSession.batch.name,
+        course: { 
+          title: courseDisplayName || 'Course',
+          name: course.name,
+          language: course.language,
+          level: course.level
+        }
+      },
+      type: newSession.type,
+      date: newSession.date,
+      startTime: newSession.startTime,
+      endTime: newSession.endTime,
+      duration: newSession.duration,
+      location: newSession.location,
+      status: newSession.status,
+      description: newSession.description,
+      students: 0, // No students enrolled yet
+      materials: newSession.materials.map(m => m.name),
+      objectives: newSession.objectives,
+      isOnline: newSession.isOnline,
+      meetingUrl: newSession.meetingUrl,
+      attendance: [],
+      trainerNotes: newSession.trainerNotes,
+      createdAt: newSession.createdAt,
+      updatedAt: newSession.updatedAt
     };
 
     return NextResponse.json(
       { 
         message: "Session created successfully", 
-        session: newSession 
+        session: formattedSession 
       },
       { status: 201 }
     );

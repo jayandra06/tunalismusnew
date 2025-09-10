@@ -186,7 +186,13 @@ const courseSchema = new mongoose.Schema({
     }
   },
   
-  // Instructor Assignment
+  // Multi-Trainer Support
+  trainers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  
+  // Legacy Instructor Assignment (for backward compatibility)
   instructor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -315,10 +321,28 @@ courseSchema.methods.updateOfflineMaterialsCost = function() {
   }
 };
 
+// Method to get all trainers (including legacy instructor)
+courseSchema.methods.getAllTrainers = function() {
+  const allTrainers = [...this.trainers];
+  
+  // Add legacy instructor if not already in trainers array
+  if (this.instructor && !allTrainers.includes(this.instructor)) {
+    allTrainers.push(this.instructor);
+  }
+  
+  return allTrainers;
+};
+
+// Method to check if a user is a trainer for this course
+courseSchema.methods.isTrainer = function(userId) {
+  return this.trainers.includes(userId) || this.instructor?.toString() === userId?.toString();
+};
+
 // Index for efficient queries
 courseSchema.index({ language: 1, level: 1, month: 1, year: 1 });
 courseSchema.index({ status: 1 });
 courseSchema.index({ instructor: 1 });
+courseSchema.index({ trainers: 1 });
 
 // Clear any existing model to avoid conflicts
 if (mongoose.models.Course) {

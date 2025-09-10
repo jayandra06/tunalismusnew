@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import Batch from "../../../../models/Batch";
 import User from "../../../../models/User";
+import Enrollment from "../../../../models/Enrollment";
 import Progress from "../../../../models/Progress";
 import { connectToDB } from "../../../../lib/mongodb";
 import { authorize } from "../../../../lib/auth";
@@ -9,40 +11,64 @@ export async function GET(req) {
   try {
     await connectToDB();
 
-    const userRole = req.headers.get("X-User-Role");
-    const userId = req.headers.get("X-User-Id");
+    // Get user role from middleware headers first
+    let userRole = req.headers.get("X-User-Role");
+    let userId = req.headers.get("X-User-Id");
+    
+    // Fallback: If headers aren't set by middleware, try to get token directly
+    if (!userRole) {
+      console.log('⚠️ No X-User-Role header found, trying direct token check...');
+      const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+      if (token) {
+        userRole = token.role;
+        userId = token.sub;
+        console.log('✅ Got role from direct token:', userRole);
+      }
+    }
 
     // Only trainers can access this route
     if (!authorize("trainer", userRole)) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    // Find all batches assigned to this trainer
-    const trainerBatches = await Batch.find({ trainer: userId })
-      .populate('course', 'title')
-      .populate('students', 'name email phone');
+    // Find all batches assigned to this trainer (using instructor field)
+    const trainerBatches = await Batch.find({ instructor: userId })
+      .populate('course', 'title');
 
-    // Get all students from these batches
+    // Get all students from these batches through enrollments
+    const batchIds = trainerBatches.map(batch => batch._id);
+    const enrollments = await Enrollment.find({ 
+      batch: { $in: batchIds }, 
+      status: { $in: ['enrolled', 'active'] } 
+    }).populate('student', 'name email phone').populate('batch', 'name');
+
+    // Get unique students and their batch information
     const allStudents = [];
-    const batchMap = new Map();
+    const studentMap = new Map();
 
-    for (const batch of trainerBatches) {
-      batchMap.set(batch._id.toString(), batch);
-      for (const student of batch.students) {
-        // Check if student is already in the list
-        const existingStudent = allStudents.find(s => s._id.toString() === student._id.toString());
-        if (!existingStudent) {
-          allStudents.push({
-            ...student.toObject(),
-            batch: {
-              _id: batch._id,
-              name: batch.name,
-              course: batch.course
-            }
-          });
-        }
+    for (const enrollment of enrollments) {
+      const studentId = enrollment.student._id.toString();
+      
+      if (!studentMap.has(studentId)) {
+        const batch = trainerBatches.find(b => b._id.toString() === enrollment.batch._id.toString());
+        studentMap.set(studentId, {
+          _id: enrollment.student._id,
+          name: enrollment.student.name,
+          email: enrollment.student.email,
+          phone: enrollment.student.phone,
+          batch: {
+            _id: batch._id,
+            name: batch.name,
+            course: batch.course
+          },
+          enrollmentId: enrollment._id,
+          status: enrollment.status,
+          progress: enrollment.progress
+        });
       }
     }
+
+    allStudents.push(...studentMap.values());
 
     // Get progress data for each student
     const studentsWithProgress = await Promise.all(

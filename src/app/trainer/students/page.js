@@ -35,20 +35,19 @@ export default function TrainerStudentsPage() {
   const [filterBatch, setFilterBatch] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        
-        // Fetch students and batches
-        const [studentsResponse, batchesResponse] = await Promise.all([
-          fetch('/api/trainer/students', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          fetch('/api/trainer/batches', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
-        ]);
+  const fetchData = async () => {
+    try {
+      console.log('🔄 Fetching trainer students and batches...');
+      
+      // Fetch students and batches
+      const [studentsResponse, batchesResponse] = await Promise.all([
+        fetch('/api/trainer/students', {
+          credentials: 'include'
+        }),
+        fetch('/api/trainer/batches', {
+          credentials: 'include'
+        })
+      ]);
         
         if (studentsResponse.ok) {
           const studentsData = await studentsResponse.json();
@@ -166,6 +165,7 @@ export default function TrainerStudentsPage() {
       }
     };
 
+  useEffect(() => {
     fetchData();
   }, []);
 

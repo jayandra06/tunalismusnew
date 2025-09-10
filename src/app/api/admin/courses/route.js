@@ -54,8 +54,9 @@ export async function GET(req) {
     // Calculate skip value for pagination
     const skip = (page - 1) * limit;
 
-    // Fetch courses with pagination and populate instructor
+    // Fetch courses with pagination and populate trainers and instructor
     const courses = await Course.find(filter)
+      .populate('trainers', 'name email')
       .populate('instructor', 'name email')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -140,6 +141,7 @@ export async function POST(req) {
       pricing,
       offlineMaterials,
       description,
+      trainers,
       instructor
     } = await req.json();
 
@@ -221,13 +223,17 @@ export async function POST(req) {
         totalCost: offlineMaterialsTotalCost
       },
       description: description || '',
+      trainers: trainers || [],
       instructor: instructor || null,
       status: 'draft'
     });
 
     await course.save();
 
-    // Populate instructor information if instructor is assigned
+    // Populate trainer information
+    if (course.trainers && course.trainers.length > 0) {
+      await course.populate('trainers', 'name email');
+    }
     if (course.instructor) {
       await course.populate('instructor', 'name email');
     }

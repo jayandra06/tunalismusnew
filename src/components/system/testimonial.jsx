@@ -2,47 +2,75 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const testimonials = [
-  {
-    id: 1,
-    quote: "I always felt lost in language classes before. At Tunalismus, Sema really listened and encouraged me—I found the confidence to speak for the first time.",
-    name: "Sofia",
-    role: "German Learner",
-    image: "https://i.pinimg.com/736x/f2/67/82/f26782579295197834daa75e11919402.jpg"
-  },
-  {
-    id: 2,
-    quote: "The cultural immersion at Tunalismus made learning Turkish feel natural. After just 3 months, I could have real conversations with my in-laws!",
-    name: "Raj",
-    role: "Turkish Learner",
-    image: "https://i.pinimg.com/1200x/4e/17/f5/4e17f5e36573260fa7198faff6678938.jpg"
-  },
-  {
-    id: 3,
-    quote: "As a visual learner, I struggled with traditional methods. The creative approach here helped me retain vocabulary 3x faster than other schools.",
-    name: "Priya",
-    role: "English Learner",
-    image: "https://i.pinimg.com/1200x/c6/d0/ca/c6d0ca276dc099c634ab316e04522d3e.jpg"
-  },
-  {
-    id: 4,
-    quote: "The small group sessions created such a supportive environment. We weren't just classmates—we became friends cheering each other's progress.",
-    name: "Carlos",
-    role: "German Learner",
-    image: "https://i.pinimg.com/1200x/4e/17/f5/4e17f5e36573260fa7198faff6678938.jpg"
-  },
-  {
-    id: 5,
-    quote: "I've taken language classes for years, but Tunalismus was the first place that helped me think in the language rather than translate everything.",
-    name: "Aisha",
-    role: "Turkish Learner",
-    image: "https://i.pinimg.com/736x/e8/bd/f1/e8bdf198a66de37cfcd0f06e5e3b8db4.jpg"
-  }
-];
+// Placeholder for when we have real testimonials
+const testimonials = [];
 
 const TestimonialSection = () => {
+  // Show placeholder message when no testimonials available
+  if (testimonials.length === 0) {
+    return (
+      <section className="py-20 z-50 relative">
+        <div className="container mx-auto px-5 sm:px-10 md:px-12 lg:px-5 space-y-16">
+          <div className="space-y-4 max-w-2xl">
+            <span className="text-[var(--color-dusty-rose)] font-semibold pl-6 relative before:absolute before:top-1/2 before:left-0 before:w-5 before:h-px before:bg-[var(--color-dusty-rose)] before:rounded-full">
+              Student Stories
+            </span>
+            <h1 className="font-bold text-gray-800 text-3xl md:text-4xl">What Our Learners Say</h1>
+          </div>
+
+          <div className="relative">
+            <div className="flex md:items-stretch gap-10 lg:gap-14 min-h-[400px]">
+              {/* Placeholder Image */}
+              <div className="hidden md:flex md:w-1/2 lg:w-2/5 h-full">
+                <div className="w-full h-full bg-gradient-to-br from-[var(--color-soft-blue)]/20 to-[var(--color-dusty-rose)]/20 rounded-xl aspect-square flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-[var(--color-dusty-rose)]/20 rounded-full flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-[var(--color-dusty-rose)]">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm text-gray-500">Student Photo Coming Soon</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Waiting Message */}
+              <div className="flex-1 flex flex-col space-y-6 md:space-y-12 lg:space-y-16 md:py-6 lg:py-8 h-full justify-center backdrop-blur-2xl md:p-10 p-5">
+                <div className="space-y-8 text-center">
+                  <div className="space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-[var(--color-dusty-rose)]/10 rounded-full flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-[var(--color-dusty-rose)]">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-2xl lg:text-3xl font-semibold text-gray-800">
+                      Waiting for Our Students to Share Their Stories
+                    </h2>
+                  </div>
+                  
+                  <p className="text-lg lg:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
+                    We're just getting started on this amazing language learning journey! 
+                    Soon, our students will share their experiences and success stories here.
+                  </p>
+                  
+                  <div className="bg-gradient-to-r from-[var(--color-soft-blue)]/10 to-[var(--color-dusty-rose)]/10 rounded-2xl p-6 max-w-xl mx-auto">
+                    <p className="text-gray-700 italic">
+                      "Be the first to share your Tunalismus story! 
+                      Your experience could inspire the next generation of language learners."
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Original testimonial carousel code (for when we have testimonials)
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
+  const [direction, setDirection] = useState(1);
 
   const nextTestimonial = () => {
     setDirection(1);

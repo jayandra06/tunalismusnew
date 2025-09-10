@@ -63,7 +63,10 @@ export default function CreateCoursePage() {
       totalCost: 0
     },
     
-    // Instructor
+    // Multi-Trainer Support
+    trainers: [],
+    
+    // Legacy Instructor (for backward compatibility)
     instructor: '',
     
     // Status
@@ -507,24 +510,63 @@ export default function CreateCoursePage() {
                 />
               </div>
 
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Assign Trainer (Optional)
+                  Assign Trainers (Optional)
                 </label>
-                <select
-                  value={formData.instructor}
-                  onChange={(e) => handleInputChange('instructor', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                >
-                  <option value="">Select a trainer</option>
-                  {trainers.map(trainer => (
-                    <option key={trainer._id} value={trainer._id}>
-                      {trainer.name} ({trainer.email})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  You can assign a trainer later or leave this empty for now
+                <div className="space-y-3">
+                  {/* Multi-trainer selection */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {trainers.map(trainer => (
+                      <label key={trainer._id} className="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.trainers.includes(trainer._id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData(prev => ({
+                                ...prev,
+                                trainers: [...prev.trainers, trainer._id]
+                              }));
+                            } else {
+                              setFormData(prev => ({
+                                ...prev,
+                                trainers: prev.trainers.filter(id => id !== trainer._id)
+                              }));
+                            }
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          {trainer.name} ({trainer.email})
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  
+                  {/* Legacy single trainer selection (for backward compatibility) */}
+                  <div className="border-t pt-3">
+                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Legacy Single Trainer (Optional)
+                    </label>
+                    <select
+                      value={formData.instructor}
+                      onChange={(e) => handleInputChange('instructor', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Select a single trainer (legacy)</option>
+                      {trainers.map(trainer => (
+                        <option key={trainer._id} value={trainer._id}>
+                          {trainer.name} ({trainer.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  • Select multiple trainers to distribute batches among them<br/>
+                  • Or use legacy single trainer assignment<br/>
+                  • You can assign trainers later or leave empty for now
                 </p>
               </div>
             </div>

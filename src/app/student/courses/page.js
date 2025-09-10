@@ -15,9 +15,11 @@ import {
   Download,
   Eye,
   Star,
-  TrendingUp
+  TrendingUp,
+  Video
 } from "lucide-react";
 import Link from "next/link";
+import JitsiMeetButton from "@/components/ui/jitsi-meet-button";
 
 export default function StudentCoursesPage() {
   const [courses, setCourses] = useState([]);
@@ -33,16 +35,13 @@ export default function StudentCoursesPage() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/student/courses', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        const response = await fetch('/api/student/batches', {
+          credentials: 'include'
         });
         
         if (response.ok) {
           const data = await response.json();
-          setCourses(data.courses || []);
+          setCourses(data.batches || []);
         } else {
           setError('Failed to fetch courses');
         }
@@ -188,10 +187,10 @@ export default function StudentCoursesPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                      {course.displayName || course.name || 'Untitled Course'}
+                      {course.course?.displayName || course.course?.name || `${course.course?.language} ${course.course?.level}` || 'Untitled Course'}
                     </CardTitle>
                     <CardDescription className="text-gray-600 dark:text-gray-400 mb-3">
-                      {course.description || 'No description available'}
+                      {course.batchType?.charAt(0).toUpperCase() + course.batchType?.slice(1)} Batch {course.batchNumber}
                     </CardDescription>
                     <div className="flex items-center gap-2 mb-3">
                       <Badge className={getStatusColor(course.status)}>
@@ -231,26 +230,78 @@ export default function StudentCoursesPage() {
                 <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                   <div className="flex items-center text-gray-600 dark:text-gray-400">
                     <Users className="h-4 w-4 mr-2" />
-                    <span>Batch: {course.batchName || 'Not assigned'}</span>
+                    <span>{course.currentStudents || 0} / {course.maxStudents || 0} students</span>
                   </div>
                   <div className="flex items-center text-gray-600 dark:text-gray-400">
                     <Calendar className="h-4 w-4 mr-2" />
-                    <span>Started: {course.enrolledAt ? new Date(course.enrolledAt).toLocaleDateString() : 'N/A'}</span>
+                    <span>{course.startDate ? new Date(course.startDate).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2">
-                  <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
-                    <Play className="h-4 w-4 mr-2" />
-                    Continue Learning
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4" />
-                  </Button>
+                <div className="space-y-3">
+                  {/* Join Class Button - Prominent for Active Courses */}
+                  {course.status === 'active' && (
+                    <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center">
+                            <Video className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900 dark:text-white">Live Class Available</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Join your {course.course?.language} {course.course?.level} class now
+                            </p>
+                          </div>
+                        </div>
+                        <JitsiMeetButton
+                          batchId={course._id}
+                          batchName={course.course?.displayName || course.course?.name || `${course.course?.language} ${course.course?.level}`}
+                          meetingUrl={course.meeting?.meetingUrl}
+                          roomPassword={course.meeting?.roomPassword}
+                          isActive={course.meeting?.isActive}
+                          userRole="student"
+                          onMeetingJoin={() => {
+                            console.log('Student joined class:', course.course?.displayName);
+                            // Refresh courses to update status
+                            setTimeout(() => window.location.reload(), 1000);
+                          }}
+                          className="bg-green-600 hover:bg-green-700 text-white border-0"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Regular Jitsi Meet Button for other statuses */}
+                  {course.status !== 'active' && (
+                    <JitsiMeetButton
+                      batchId={course._id}
+                      batchName={course.course?.displayName || course.course?.name || `${course.course?.language} ${course.course?.level}`}
+                      meetingUrl={course.meeting?.meetingUrl}
+                      roomPassword={course.meeting?.roomPassword}
+                      isActive={course.meeting?.isActive}
+                      userRole="student"
+                      onMeetingJoin={() => {
+                        console.log('Student joined class:', course.course?.displayName);
+                        setTimeout(() => window.location.reload(), 1000);
+                      }}
+                    />
+                  )}
+                  
+                  {/* Other Action Buttons */}
+                  <div className="flex gap-2">
+                    <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
+                      <Play className="h-4 w-4 mr-2" />
+                      Continue Learning
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

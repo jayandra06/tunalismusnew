@@ -24,6 +24,7 @@ import {
   Settings
 } from "lucide-react";
 import Link from "next/link";
+import JitsiMeetButton from "@/components/ui/jitsi-meet-button";
 
 export default function BatchesPage() {
   const { data: session, status } = useSession();
@@ -471,32 +472,58 @@ export default function BatchesPage() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleViewBatch(batch._id)}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditBatch(batch._id)}
-                      >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteBatch(batch._id, batch.name)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
+                    <div className="flex flex-col space-y-3">
+                      {/* Meeting Button */}
+                      <JitsiMeetButton
+                        batchId={batch._id}
+                        batchName={batch.course?.displayName || batch.course?.name || `${batch.course?.language} ${batch.course?.level}`}
+                        meetingUrl={batch.meeting?.meetingUrl}
+                        roomPassword={batch.meeting?.roomPassword}
+                        isActive={batch.meeting?.isActive}
+                        userRole="admin"
+                        onMeetingStart={() => {
+                          // Refresh batches to update status
+                          fetchBatches();
+                        }}
+                        onMeetingEnd={() => {
+                          // Refresh batches to update status
+                          fetchBatches();
+                        }}
+                        onMeetingJoin={() => {
+                          // Optional: Log meeting join
+                          console.log('Admin joined meeting for batch:', batch._id);
+                        }}
+                        className="w-full"
+                      />
+                      
+                      {/* Action Buttons */}
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleViewBatch(batch._id)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditBatch(batch._id)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleDeleteBatch(batch._id, batch.name)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -37,15 +37,13 @@ export default function TrainerSchedulePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        
         // Fetch sessions and batches
         const [sessionsResponse, batchesResponse] = await Promise.all([
           fetch('/api/trainer/sessions', {
-            headers: { 'Authorization': `Bearer ${token}` }
+            credentials: 'include'
           }),
           fetch('/api/trainer/batches', {
-            headers: { 'Authorization': `Bearer ${token}` }
+            credentials: 'include'
           })
         ]);
         
@@ -53,96 +51,16 @@ export default function TrainerSchedulePage() {
           const sessionsData = await sessionsResponse.json();
           setSessions(sessionsData.sessions || []);
         } else {
-          // Mock data for now
-          setSessions([
-            {
-              _id: '1',
-              title: 'React Components Deep Dive',
-              batch: {
-                _id: 'batch1',
-                name: 'React Fundamentals - Batch A',
-                course: { title: 'React Fundamentals' }
-              },
-              type: 'lecture',
-              date: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-              startTime: '10:00',
-              endTime: '12:00',
-              duration: 120,
-              location: 'Online - Zoom',
-              status: 'scheduled',
-              description: 'Learn about React components, props, and state management',
-              students: 25,
-              materials: ['React Components Guide.pdf', 'Component Examples.zip']
-            },
-            {
-              _id: '2',
-              title: 'JavaScript Async Programming Workshop',
-              batch: {
-                _id: 'batch2',
-                name: 'JavaScript Advanced - Batch B',
-                course: { title: 'JavaScript Advanced' }
-              },
-              type: 'workshop',
-              date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // Day after tomorrow
-              startTime: '14:00',
-              endTime: '17:00',
-              duration: 180,
-              location: 'Classroom 101',
-              status: 'scheduled',
-              description: 'Hands-on workshop on promises, async/await, and error handling',
-              students: 18,
-              materials: ['Async Programming Guide.pdf', 'Workshop Exercises.zip']
-            },
-            {
-              _id: '3',
-              title: 'Project Review Session',
-              batch: {
-                _id: 'batch1',
-                name: 'React Fundamentals - Batch A',
-                course: { title: 'React Fundamentals' }
-              },
-              type: 'review',
-              date: new Date(Date.now() - 24 * 60 * 60 * 1000), // Yesterday
-              startTime: '15:00',
-              endTime: '16:30',
-              duration: 90,
-              location: 'Online - Zoom',
-              status: 'completed',
-              description: 'Review of student projects and feedback session',
-              students: 25,
-              materials: ['Project Guidelines.pdf']
-            },
-            {
-              _id: '4',
-              title: 'Node.js Fundamentals',
-              batch: {
-                _id: 'batch3',
-                name: 'Node.js Backend - Batch C',
-                course: { title: 'Node.js Backend Development' }
-              },
-              type: 'lecture',
-              date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-              startTime: '18:00',
-              endTime: '20:00',
-              duration: 120,
-              location: 'Online - Zoom',
-              status: 'scheduled',
-              description: 'Introduction to Node.js and server-side development',
-              students: 20,
-              materials: ['Node.js Basics.pdf', 'Setup Guide.pdf']
-            }
-          ]);
+          console.error('Failed to fetch sessions:', sessionsResponse.status, sessionsResponse.statusText);
+          setSessions([]);
         }
         
         if (batchesResponse.ok) {
           const batchesData = await batchesResponse.json();
           setBatches(batchesData.batches || []);
         } else {
-          setBatches([
-            { _id: 'batch1', name: 'React Fundamentals - Batch A' },
-            { _id: 'batch2', name: 'JavaScript Advanced - Batch B' },
-            { _id: 'batch3', name: 'Node.js Backend - Batch C' }
-          ]);
+          console.error('Failed to fetch batches:', batchesResponse.status, batchesResponse.statusText);
+          setBatches([]);
         }
       } catch (error) {
         console.error('Error fetching data:', error);

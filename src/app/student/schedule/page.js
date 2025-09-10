@@ -18,6 +18,7 @@ import {
   Filter,
   Download
 } from "lucide-react";
+import JitsiMeetButton from "@/components/ui/jitsi-meet-button";
 
 export default function StudentSchedulePage() {
   const [schedule, setSchedule] = useState([]);
@@ -333,9 +334,18 @@ export default function StudentSchedulePage() {
                       </div>
                       
                       <div className="ml-4 flex flex-col gap-2">
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                          Join Session
-                        </Button>
+                        <JitsiMeetButton
+                          batchId={session.batchId || session._id}
+                          batchName={session.title || session.course}
+                          meetingUrl={session.meetingUrl}
+                          roomPassword={session.roomPassword}
+                          isActive={session.isActive || session.status === 'active'}
+                          userRole="student"
+                          onMeetingJoin={() => {
+                            console.log('Student joined meeting for session:', session._id);
+                          }}
+                          className="min-w-[120px]"
+                        />
                         <Button variant="outline" size="sm">
                           View Details
                         </Button>
@@ -376,9 +386,18 @@ export default function StudentSchedulePage() {
                       </p>
                     </div>
                   </div>
-                  <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                    Join Now
-                  </Button>
+                  <JitsiMeetButton
+                    batchId={session.batchId || session._id}
+                    batchName={session.title || session.course}
+                    meetingUrl={session.meetingUrl}
+                    roomPassword={session.roomPassword}
+                    isActive={session.isActive || true} // Assume active for today's sessions
+                    userRole="student"
+                    onMeetingJoin={() => {
+                      console.log('Student joined meeting for session:', session._id);
+                    }}
+                    className="min-w-[120px]"
+                  />
                 </div>
               ))}
             </div>

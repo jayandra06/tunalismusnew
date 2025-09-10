@@ -9,7 +9,7 @@ export async function GET(req, { params }) {
 
     const userRole = req.headers.get("X-User-Role");
     const userId = req.headers.get("X-User-Id");
-    const batchId = params.id;
+    const { id: batchId } = await params;
 
     // Only trainers and admins can access this route
     if (!authorize("trainer", userRole)) {
@@ -53,7 +53,7 @@ export async function PUT(req, { params }) {
 
     const userRole = req.headers.get("X-User-Role");
     const userId = req.headers.get("X-User-Id");
-    const batchId = params.id;
+    const { id: batchId } = await params;
 
     // Only trainers and admins can update batches
     if (!authorize("trainer", userRole)) {

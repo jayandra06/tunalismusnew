@@ -199,13 +199,27 @@ export class BatchManagementService {
    * @param {boolean} isLeftoverBatch - Whether this is a leftover batch
    * @returns {Object} Created batch
    */
-  static async createBatch(courseId, batchType, batchNumber, maxStudents, enrollments, courseDuration, month, year, isLeftoverBatch = false) {
+  static async createBatch(courseId, batchType, batchNumber, maxStudents, enrollments, courseDuration, month, year, isLeftoverBatch = false, assignedTrainer = null) {
     // Get course to inherit instructor
     const course = await Course.findById(courseId);
     
     // Calculate start and end dates
     const startDate = new Date(year, month - 1, 1); // First day of the month
     const endDate = new Date(year, month - 1 + courseDuration, 0); // Last day of the final month
+
+    // Determine instructor for this batch
+    let instructor = null;
+    if (assignedTrainer) {
+      // Use specifically assigned trainer
+      instructor = assignedTrainer;
+    } else if (course?.trainers && course.trainers.length > 0) {
+      // Distribute among course trainers (round-robin)
+      const trainerIndex = (batchNumber - 1) % course.trainers.length;
+      instructor = course.trainers[trainerIndex];
+    } else if (course?.instructor) {
+      // Fallback to legacy instructor
+      instructor = course.instructor;
+    }
 
     const batch = new Batch({
       batchNumber,
@@ -218,7 +232,7 @@ export class BatchManagementService {
       duration: courseDuration,
       isLeftoverBatch,
       status: 'upcoming',
-      instructor: course?.instructor || null, // Inherit instructor from course
+      instructor: instructor,
       name: `${batchType.charAt(0).toUpperCase() + batchType.slice(1)} Batch ${batchNumber}` // Add name field
     });
 

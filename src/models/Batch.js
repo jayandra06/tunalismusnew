@@ -91,6 +91,55 @@ const batchSchema = new mongoose.Schema({
     }
   },
   
+  // Jitsi Meet Integration
+  jitsiMeeting: {
+    roomName: {
+      type: String,
+      default: ''
+    },
+    roomPassword: {
+      type: String,
+      default: ''
+    },
+    isActive: {
+      type: Boolean,
+      default: false
+    },
+    lastMeetingDate: {
+      type: Date,
+      default: null
+    },
+    meetingHistory: [{
+      date: {
+        type: Date,
+        default: Date.now
+      },
+      duration: {
+        type: Number, // in minutes
+        default: 0
+      },
+      participants: [{
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        },
+        joinTime: {
+          type: Date,
+          default: Date.now
+        },
+        leaveTime: {
+          type: Date,
+          default: null
+        },
+        role: {
+          type: String,
+          enum: ['trainer', 'student', 'admin'],
+          default: 'student'
+        }
+      }]
+    }]
+  },
+  
   // Batch Notes
   notes: {
     type: String,
@@ -159,6 +208,136 @@ batchSchema.methods.isUpcoming = function() {
 batchSchema.methods.isCompleted = function() {
   const now = new Date();
   return this.endDate < now || this.status === 'completed';
+};
+
+// Method to initialize Jitsi meeting for batch
+batchSchema.methods.initializeJitsiMeeting = function() {
+  try {
+    // Import jitsi service dynamically
+    const jitsiService = require('../lib/jitsi-service').default;
+    const meetingInfo = jitsiService.getMeetingInfo(this._id.toString(), this.name);
+    
+    this.jitsiMeeting.roomName = meetingInfo.roomName;
+    this.jitsiMeeting.roomPassword = meetingInfo.password;
+    this.jitsiMeeting.isActive = true;
+    this.jitsiMeeting.lastMeetingDate = new Date();
+    
+    return meetingInfo;
+  } catch (error) {
+    console.error('Error initializing Jitsi meeting:', error);
+    // Fallback: generate basic meeting info
+    const roomName = `batch-${this._id}-${this.name?.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-') || 'class'}`;
+    const crypto = require('crypto');
+    const secret = process.env.JITSI_ROOM_SECRET || 'tunalismus-secret-key';
+    const hash = crypto.createHash('sha256').update(`${this._id}-${secret}`).digest('hex');
+    const roomPassword = hash.substring(0, 8).toUpperCase();
+    
+    this.jitsiMeeting.roomName = roomName;
+    this.jitsiMeeting.roomPassword = roomPassword;
+    this.jitsiMeeting.isActive = true;
+    this.jitsiMeeting.lastMeetingDate = new Date();
+    
+    return {
+      roomName,
+      password: roomPassword,
+      domain: process.env.JITSI_DOMAIN || 'meet.tunalismus.com',
+      baseUrl: `https://${process.env.JITSI_DOMAIN || 'meet.tunalismus.com'}/${roomName}`,
+      displayName: `${this.name} - Batch Class`
+    };
+  }
+};
+
+// Method to get Jitsi meeting URL for a user
+batchSchema.methods.getJitsiMeetingUrl = function(user, userRole) {
+  try {
+    const jitsiService = require('../lib/jitsi-service').default;
+    
+    if (!this.jitsiMeeting.roomName) {
+      this.initializeJitsiMeeting();
+    }
+    
+    switch (userRole) {
+      case 'trainer':
+        return jitsiService.generateTrainerMeetingUrl(this._id.toString(), this.name, user);
+      case 'admin':
+        return jitsiService.generateAdminMeetingUrl(this._id.toString(), this.name, user);
+      case 'student':
+      default:
+        return jitsiService.generateStudentMeetingUrl(this._id.toString(), this.name, user);
+    }
+  } catch (error) {
+    console.error('Error generating Jitsi meeting URL:', error);
+    // Fallback: generate basic URL
+    const roomName = this.jitsiMeeting.roomName || `batch-${this._id}-${this.name?.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-') || 'class'}`;
+    const domain = process.env.JITSI_DOMAIN || 'meet.tunalismus.com';
+    const appId = process.env.JITSI_APP_ID || 'tunalismus';
+    
+    let url = `https://${domain}/${roomName}`;
+    const params = new URLSearchParams();
+    
+    if (user.name) {
+      params.append('userInfo.displayName', user.name);
+    }
+    if (user.email) {
+      params.append('userInfo.email', user.email);
+    }
+    
+    // Add role-specific settings
+    if (userRole === 'trainer' || userRole === 'admin') {
+      params.append('config.startWithAudioMuted', 'false');
+      params.append('config.startWithVideoMuted', 'false');
+      if (this.jitsiMeeting.roomPassword) {
+        params.append('password', this.jitsiMeeting.roomPassword);
+      }
+    } else {
+      params.append('config.startWithAudioMuted', 'true');
+      params.append('config.startWithVideoMuted', 'true');
+    }
+    
+    params.append('appId', appId);
+    params.append('roomName', `${this.name} - Batch Class`);
+    params.append('t', Date.now().toString());
+    
+    return `${url}?${params.toString()}`;
+  }
+};
+
+// Method to record meeting participation
+batchSchema.methods.recordMeetingParticipation = function(userId, userRole, action = 'join') {
+  const now = new Date();
+  
+  // Find or create today's meeting record
+  let todayMeeting = this.jitsiMeeting.meetingHistory.find(
+    meeting => meeting.date.toDateString() === now.toDateString()
+  );
+  
+  if (!todayMeeting) {
+    todayMeeting = {
+      date: now,
+      duration: 0,
+      participants: []
+    };
+    this.jitsiMeeting.meetingHistory.push(todayMeeting);
+  }
+  
+  // Find existing participant record
+  let participant = todayMeeting.participants.find(
+    p => p.user.toString() === userId.toString()
+  );
+  
+  if (!participant) {
+    participant = {
+      user: userId,
+      joinTime: now,
+      leaveTime: null,
+      role: userRole
+    };
+    todayMeeting.participants.push(participant);
+  } else if (action === 'leave') {
+    participant.leaveTime = now;
+  }
+  
+  return participant;
 };
 
 // Index for efficient queries

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,31 +21,41 @@ import {
   MapPin,
   GraduationCap,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Video
 } from "lucide-react";
 import Link from "next/link";
+import JitsiMeetButton from "@/components/ui/jitsi-meet-button";
 
 export default function TrainerBatchesPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/trainer/batches', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setBatches(data.batches || []);
-        } else {
+  const fetchBatches = async () => {
+    try {
+      console.log('🔄 Fetching trainer batches...');
+      const response = await fetch('/api/trainer/batches', {
+        credentials: 'include'
+      });
+      
+      console.log('📡 Response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Batches fetched successfully:', data.batches?.length || 0, 'batches');
+        setBatches(data.batches || []);
+        setError(null);
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Failed to fetch batches:', errorData);
+        setError(`Failed to load batches: ${errorData.message || 'Unknown error'}`);
+        // Use mock data for now if API fails
           // Mock data for now
           setBatches([
             {
@@ -121,8 +133,22 @@ export default function TrainerBatchesPage() {
       }
     };
 
-    fetchBatches();
-  }, []);
+  useEffect(() => {
+    console.log('🔍 Trainer Batches Session:', {
+      status,
+      session: session ? 'Present' : 'None',
+      user: session?.user,
+      role: session?.user?.role
+    });
+    
+    // Only fetch batches if user is authenticated and has trainer role
+    if (status === 'authenticated' && (session?.user?.role === 'trainer' || session?.user?.role === 'admin')) {
+      fetchBatches();
+    } else if (status === 'unauthenticated') {
+      // Redirect to login if not authenticated
+      router.push('/trainer/login');
+    }
+  }, [session, status, router]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -163,8 +189,12 @@ export default function TrainerBatchesPage() {
   };
 
   const filteredBatches = batches.filter(batch => {
-    const matchesSearch = batch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         batch.course.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const courseName = batch.course?.displayName || batch.course?.name || `${batch.course?.language} ${batch.course?.level}` || 'Unknown Course';
+    const batchName = `${batch.batchType} Batch ${batch.batchNumber}`;
+    const matchesSearch = courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         batchName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         batch.course?.language?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         batch.course?.level?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || batch.status === filterStatus;
     
     return matchesSearch && matchesStatus;
@@ -174,8 +204,36 @@ export default function TrainerBatchesPage() {
   const completedBatches = batches.filter(batch => batch.status === 'completed');
   const totalStudents = batches.reduce((acc, batch) => acc + batch.students.length, 0);
   const averageProgress = batches.length > 0 
-    ? Math.round(batches.reduce((acc, batch) => acc + batch.progress, 0) / batches.length)
+    ? Math.round(batches.reduce((acc, batch) => acc + (batch.progress || 0), 0) / batches.length)
     : 0;
+
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (status === 'unauthenticated') {
+    router.push('/trainer/login');
+    return null;
+  }
+
+  // Check if user has trainer role
+  if (session?.user?.role !== 'trainer' && session?.user?.role !== 'admin') {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h2>
+          <p className="text-gray-600">You don't have permission to access this page.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -187,11 +245,18 @@ export default function TrainerBatchesPage() {
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <div className="text-red-600 mb-4">{error}</div>
-        <Button onClick={() => window.location.reload()}>
-          Try Again
-        </Button>
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Batches</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => {
+            setError(null);
+            setLoading(true);
+            fetchBatches();
+          }} className="bg-blue-600 hover:bg-blue-700">
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
@@ -201,10 +266,10 @@ export default function TrainerBatchesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Batches</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Manage your training batches and track student progress
-          </p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Batches</h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              Welcome, {session?.user?.name || 'Trainer'}! Manage your training batches and track student progress
+            </p>
         </div>
         <Link href="/trainer/batches/new">
           <Button className="bg-blue-600 hover:bg-blue-700">
@@ -319,10 +384,10 @@ export default function TrainerBatchesPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <CardTitle className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                          {batch.name}
+                          {batch.course?.displayName || batch.course?.name || `${batch.course?.language} ${batch.course?.level}` || 'Unknown Course'}
                         </CardTitle>
                         <CardDescription className="text-gray-600 dark:text-gray-400 mb-3">
-                          {batch.course.description}
+                          {batch.batchType?.charAt(0).toUpperCase() + batch.batchType?.slice(1)} Batch {batch.batchNumber}
                         </CardDescription>
                         <div className="flex items-center gap-2 mb-3">
                           <Badge className={getStatusColor(batch.status)}>
@@ -347,16 +412,16 @@ export default function TrainerBatchesPage() {
                           Course Progress
                         </span>
                         <span className="text-sm font-bold text-gray-900 dark:text-white">
-                          {batch.progress}%
+                          {batch.progress || 0}%
                         </span>
                       </div>
                       <Progress 
-                        value={batch.progress} 
+                        value={batch.progress || 0} 
                         className="h-2"
                       />
                       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <span>{batch.completedSessions} of {batch.totalSessions} sessions completed</span>
-                        <span>{batch.totalSessions - batch.completedSessions} remaining</span>
+                        <span>{batch.completedSessions || 0} of {batch.totalSessions || 0} sessions completed</span>
+                        <span>{(batch.totalSessions || 0) - (batch.completedSessions || 0)} remaining</span>
                       </div>
                     </div>
 
@@ -367,12 +432,16 @@ export default function TrainerBatchesPage() {
                         <span>{formatDate(batch.startDate)} - {formatDate(batch.endDate)}</span>
                       </div>
                       <div className="flex items-center text-gray-600 dark:text-gray-400">
+                        <Users className="h-4 w-4 mr-2" />
+                        <span>{batch.currentStudents || 0} / {batch.maxStudents || 0} students enrolled</span>
+                      </div>
+                      <div className="flex items-center text-gray-600 dark:text-gray-400">
                         <Clock className="h-4 w-4 mr-2" />
-                        <span>{batch.schedule}</span>
+                        <span>{batch.schedule || 'Schedule TBD'}</span>
                       </div>
                       <div className="flex items-center text-gray-600 dark:text-gray-400">
                         <MapPin className="h-4 w-4 mr-2" />
-                        <span>{batch.location}</span>
+                        <span>{batch.location || 'Location TBD'}</span>
                       </div>
                       {batch.status === 'active' && (
                         <div className="flex items-center text-gray-600 dark:text-gray-400">
@@ -383,16 +452,41 @@ export default function TrainerBatchesPage() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <Link href={`/trainer/batches/${batch._id}`} className="flex-1">
-                        <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
+                    <div className="space-y-3">
+                      {/* Jitsi Meet Button */}
+                      <JitsiMeetButton
+                        batchId={batch._id}
+                        batchName={batch.course?.displayName || batch.course?.name || `${batch.course?.language} ${batch.course?.level}`}
+                        meetingUrl={batch.meeting?.meetingUrl}
+                        roomPassword={batch.meeting?.roomPassword}
+                        isActive={batch.meeting?.isActive}
+                        userRole="trainer"
+                        onMeetingStart={() => {
+                          // Refresh batches to update status
+                          fetchBatches();
+                        }}
+                        onMeetingEnd={() => {
+                          // Refresh batches to update status
+                          fetchBatches();
+                        }}
+                        onMeetingJoin={() => {
+                          // Refresh batches to update status
+                          fetchBatches();
+                        }}
+                      />
+                      
+                      {/* Other Action Buttons */}
+                      <div className="flex gap-2">
+                        <Link href={`/trainer/batches/${batch._id}`} className="flex-1">
+                          <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </Button>
+                        </Link>
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-4 w-4" />
                         </Button>
-                      </Link>
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

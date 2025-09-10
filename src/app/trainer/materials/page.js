@@ -52,15 +52,13 @@ export default function TrainerMaterialsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        
         // Fetch materials and batches
         const [materialsResponse, batchesResponse] = await Promise.all([
           fetch('/api/trainer/materials', {
-            headers: { 'Authorization': `Bearer ${token}` }
+            credentials: 'include'
           }),
           fetch('/api/trainer/batches', {
-            headers: { 'Authorization': `Bearer ${token}` }
+            credentials: 'include'
           })
         ]);
         
@@ -229,13 +227,12 @@ export default function TrainerMaterialsPage() {
     setUploading(true);
     
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/materials', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(uploadData)
       });
 
@@ -266,12 +263,9 @@ export default function TrainerMaterialsPage() {
     if (!confirm('Are you sure you want to delete this material?')) return;
     
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/materials/${materialId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include'
       });
 
       if (response.ok) {

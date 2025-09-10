@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import User from "../../../../models/User";
 import Course from "../../../../models/Course";
 import Batch from "../../../../models/Batch";
+import Enrollment from "../../../../models/Enrollment";
 import Progress from "../../../../models/Progress";
 import { connectToDB } from "../../../../lib/mongodb";
 import { authorize } from "../../../../lib/auth";
@@ -10,21 +12,37 @@ export async function GET(req) {
   try {
     await connectToDB();
 
-    // Get user info from middleware headers
-    const userId = req.headers.get("X-User-Id");
-    const userRole = req.headers.get("X-User-Role");
+    // Get user info from middleware headers first
+    let userId = req.headers.get("X-User-Id");
+    let userRole = req.headers.get("X-User-Role");
+    
+    // Fallback: If headers aren't set by middleware, try to get token directly
+    if (!userRole) {
+      console.log('⚠️ No X-User-Role header found, trying direct token check...');
+      const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+      if (token) {
+        userRole = token.role;
+        userId = token.sub;
+        console.log('✅ Got role from direct token:', userRole);
+      }
+    }
     
     if (!authorize("trainer", userRole)) {
       return NextResponse.json({ message: "Trainer access required" }, { status: 403 });
     }
 
-    // Get trainer's batches
-    const trainerBatches = await Batch.find({ trainer: userId })
-      .populate('students', 'name email');
+    // Get trainer's batches (using instructor field)
+    const trainerBatches = await Batch.find({ instructor: userId });
 
     // Calculate stats
     const totalBatches = trainerBatches.length;
-    const totalStudents = trainerBatches.reduce((acc, batch) => acc + batch.students.length, 0);
+    
+    // Get total students across all trainer's batches
+    const batchIds = trainerBatches.map(batch => batch._id);
+    const totalStudents = await Enrollment.countDocuments({ 
+      batch: { $in: batchIds }, 
+      status: { $in: ['enrolled', 'active'] } 
+    });
     
     // Calculate total teaching hours (mock calculation based on batch duration)
     const totalHours = totalBatches * 40; // Assuming 40 hours per batch on average

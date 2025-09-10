@@ -58,9 +58,7 @@ async function seedDatabase() {
     const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://test:test1234@cluster0.gjtfwdb.mongodb.net/tunalismusnext?retryWrites=true&w=majority&appName=Cluster0';
     
     console.log('🔌 Connecting to MongoDB...');
-    await mongoose.connect(mongoUri, {
-      dbName: "library", // Use the same database name as the app
-    });
+    await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB successfully');
 
     // Clear existing test accounts (optional - remove this if you want to keep existing data)

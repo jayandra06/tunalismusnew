@@ -80,11 +80,8 @@ export default function TrainerSettingsPage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const token = localStorage.getItem('token');
         const response = await fetch('/api/users/profile', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          credentials: 'include'
         });
         
         if (response.ok) {
@@ -154,13 +151,12 @@ export default function TrainerSettingsPage() {
     setSuccess(null);
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/users/profile', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(profileData)
       });
 
@@ -194,13 +190,12 @@ export default function TrainerSettingsPage() {
     setSuccess(null);
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/users/change-password', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword
@@ -228,13 +223,12 @@ export default function TrainerSettingsPage() {
     setSuccess(null);
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/users/notifications', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(notificationSettings)
       });
 

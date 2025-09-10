@@ -8,7 +8,13 @@
     "start": "next start",
     "seed": "node seed-accounts.js",
     "clear-seed": "node clear-and-seed-db.js",
-    "seed-complete": "node seed-complete-data.js"
+    "seed-complete": "node seed-complete-data.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "analyze": "npx dependency-cruiser src --output-type json --output-to dependency-analysis.json",
+    "analyze:graph": "npx madge --image dependency-graph.png --extensions js,jsx src"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -47,7 +53,17 @@
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@storybook/nextjs": "^8.6.14",
+    "@storybook/react": "^8.6.14",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "dependency-cruiser": "^16.10.4",
+    "jest": "^30.1.3",
+    "jest-environment-jsdom": "^30.1.2",
+    "jsdoc": "^4.0.4",
+    "madge": "^8.0.0",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.8"
   }
