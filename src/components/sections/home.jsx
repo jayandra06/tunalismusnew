@@ -234,7 +234,7 @@ export default function HomePage() {
                 Language Learning, Designed for Real Life
               </h1>
               <p className="text-zinc-700 dark:text-zinc-300 max-w-3xl mx-auto md:text-xl">
-                When you learn with me, it's never just about grammar—it's about connection, confidence, and being truly understood in the world.
+                When you learn with me, it's never just about grammar—it's about connection, confidence, and being truly understood.
               </p>
             </div>
             <div className="grid gap-14 md:grid-cols-2 lg:grid-cols-4 lg:items-center">
