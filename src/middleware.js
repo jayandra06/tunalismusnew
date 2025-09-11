@@ -4,7 +4,7 @@ import { getToken } from "next-auth/jwt";
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
   
-  console.log('🔍 Middleware triggered for:', pathname);
+  console.log('🔍 Middleware triggered for:', pathname, 'Method:', req.method);
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -63,6 +63,7 @@ export async function middleware(req) {
   if (pathname.startsWith("/api/")) {
     console.log('🔍 API Route Access Check:', {
       pathname,
+      method: req.method,
       hasToken: !!token,
       tokenRole: token?.role,
       tokenSub: token?.sub,
