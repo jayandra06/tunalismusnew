@@ -2,6 +2,7 @@
  * This test file demonstrates how testing can help catch common errors
  * that might exist in your large project
  */
+import { render } from '@testing-library/react'
 
 describe('Error Detection Tests', () => {
   describe('API Route Error Handling', () => {
