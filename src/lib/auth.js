@@ -58,7 +58,7 @@ export const authOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        // domain: process.env.NODE_ENV === 'production' ? 'tunalismus.in' : undefined
+        domain: process.env.NODE_ENV === 'production' ? '.tunalismus.in' : undefined
       }
     },
     callbackUrl: {
@@ -68,7 +68,7 @@ export const authOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        // domain: process.env.NODE_ENV === 'production' ? 'tunalismus.in' : undefined
+        domain: process.env.NODE_ENV === 'production' ? '.tunalismus.in' : undefined
       }
     },
     csrfToken: {
@@ -78,7 +78,7 @@ export const authOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        // domain: process.env.NODE_ENV === 'production' ? 'tunalismus.in' : undefined
+        domain: process.env.NODE_ENV === 'production' ? '.tunalismus.in' : undefined
       }
     }
   },
@@ -116,6 +116,7 @@ export const authOptions = {
     signIn: "/login",
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
 };
 
 // Authorization helper function
