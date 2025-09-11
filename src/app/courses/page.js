@@ -22,39 +22,6 @@ import {
 import Navbar from '@/components/system/navbar';
 import Head from 'next/head';
 
-export const metadata = {
-  title: "Language Courses - German, Turkish & English Classes",
-  description: "Discover our comprehensive language learning programs in German, Turkish, and English. Expert-led courses designed to help you achieve fluency and connect with cultures around the world.",
-  keywords: [
-    "German courses",
-    "Turkish courses", 
-    "English courses",
-    "Language classes Hyderabad",
-    "Online language learning",
-    "Language tutor",
-    "German A1 A2 B1 B2",
-    "Turkish language classes",
-    "English conversation classes",
-    "Language immersion",
-    "Cultural learning"
-  ],
-  openGraph: {
-    title: "Language Courses - German, Turkish & English Classes | Tunalismus",
-    description: "Expert-led language courses in German, Turkish, and English. Achieve fluency through personalized learning experiences in Hyderabad, India.",
-    url: "https://tunalismus.in/courses",
-    images: [
-      {
-        url: "/og-courses.png",
-        width: 1200,
-        height: 630,
-        alt: "Language Courses - Tunalismus",
-      },
-    ],
-  },
-  alternates: {
-    canonical: "https://tunalismus.in/courses",
-  },
-};
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState([]);
@@ -298,6 +265,19 @@ export default function CoursesPage() {
   return (
     <>
       <Head>
+        <title>Language Courses - German, Turkish & English Classes | Tunalismus</title>
+        <meta name="description" content="Discover our comprehensive language learning programs in German, Turkish, and English. Expert-led courses designed to help you achieve fluency and connect with cultures around the world." />
+        <meta name="keywords" content="German courses, Turkish courses, English courses, Language classes Hyderabad, Online language learning, Language tutor, German A1 A2 B1 B2, Turkish language classes, English conversation classes, Language immersion, Cultural learning" />
+        <meta property="og:title" content="Language Courses - German, Turkish & English Classes | Tunalismus" />
+        <meta property="og:description" content="Expert-led language courses in German, Turkish, and English. Achieve fluency through personalized learning experiences in Hyderabad, India." />
+        <meta property="og:url" content="https://tunalismus.in/courses" />
+        <meta property="og:image" content="/og-courses.png" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Language Courses - German, Turkish & English Classes | Tunalismus" />
+        <meta name="twitter:description" content="Expert-led language courses in German, Turkish, and English. Achieve fluency through personalized learning experiences in Hyderabad, India." />
+        <meta name="twitter:image" content="/og-courses.png" />
+        <link rel="canonical" href="https://tunalismus.in/courses" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(coursesStructuredData) }}
