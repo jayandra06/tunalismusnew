@@ -45,14 +45,58 @@ export async function GET(req, { params }) {
 
 export async function POST(req, { params }) {
   try {
-    // Check authentication directly in the API route
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    // First try to get user info from middleware headers
+    let userRole = req.headers.get("X-User-Role");
+    let userId = req.headers.get("X-User-Id");
     
-    if (!token) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    console.log('🔍 Batch API Debug - Headers:', {
+      userRole,
+      userId,
+      hasHeaders: !!(userRole && userId)
+    });
+    
+    // If no headers from middleware, try direct token verification
+    if (!userRole || !userId) {
+      console.log('⚠️ No middleware headers found, trying direct token check...');
+      const token = await getToken({ 
+        req, 
+        secret: process.env.NEXTAUTH_SECRET,
+        cookieName: 'next-auth.session-token'
+      });
+      
+      console.log('🔍 Batch API Debug - Direct Token:', {
+        hasToken: !!token,
+        tokenRole: token?.role,
+        tokenSub: token?.sub,
+        tokenEmail: token?.email,
+        environment: process.env.NODE_ENV,
+        hasSessionCookie: !!req.cookies.get('next-auth.session-token'),
+        sessionCookieValue: req.cookies.get('next-auth.session-token')?.value?.substring(0, 20) + '...' || 'none',
+        allCookies: req.cookies.getAll().map(c => ({ name: c.name, hasValue: !!c.value }))
+      });
+      
+      if (token) {
+        userRole = token.role;
+        userId = token.sub;
+        console.log('✅ Got role from direct token:', userRole);
+      }
     }
     
-    if (token.role !== "admin") {
+    if (!userRole || !userId) {
+      console.log('❌ No authentication found in batch API route');
+      return NextResponse.json({ 
+        message: "Unauthorized",
+        debug: {
+          hasToken: false,
+          hasHeaders: !!(req.headers.get("X-User-Role") && req.headers.get("X-User-Id")),
+          availableCookies: req.cookies.getAll().map(c => c.name),
+          environment: process.env.NODE_ENV
+        }
+      }, { status: 401 });
+    }
+    
+    if (userRole !== "admin") {
+      console.log('❌ Admin access denied in batch API route:', { userRole, requiredRole: 'admin' });
       return NextResponse.json({ message: "Admin access required" }, { status: 403 });
     }
 
