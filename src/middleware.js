@@ -91,6 +91,7 @@ export async function middleware(req) {
     }
     
     if (pathname.startsWith("/api/trainer/") && !["admin", "trainer"].includes(token.role)) {
+      console.log('❌ Trainer API access denied:', { tokenRole: token.role, requiredRoles: ['admin', 'trainer'], pathname });
       return NextResponse.json({ message: "Trainer access required" }, { status: 403 });
     }
     
@@ -110,11 +111,13 @@ export async function middleware(req) {
     requestHeaders.set("X-User-Id", token.sub);
     requestHeaders.set("X-User-Role", token.role);
 
-    console.log('🔧 Setting headers:', {
+    console.log('🔧 Setting headers for API route:', {
       'X-User-Id': token.sub,
       'X-User-Role': token.role,
       'HeaderCount': requestHeaders.size,
-      'pathname': pathname
+      'pathname': pathname,
+      'tokenRole': token.role,
+      'tokenSub': token.sub
     });
 
     return NextResponse.next({

@@ -66,8 +66,47 @@ export default function TrainerLayout({ children }) {
     console.log('✅ Trainer access granted, rendering layout');
   }, [isClient, status, session, router, pathname]);
 
-  const handleLogout = () => {
-    signOut({ callbackUrl: '/login' });
+  const handleLogout = async () => {
+    try {
+      console.log('🔓 Initiating signout...');
+      
+      // First try the standard NextAuth signout
+      await signOut({ 
+        callbackUrl: '/login',
+        redirect: false // Don't redirect automatically, we'll handle it
+      });
+      
+      // Then call our custom signout endpoint to ensure cookies are cleared
+      try {
+        await fetch('/api/auth/signout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        console.log('✅ Custom signout successful');
+      } catch (customError) {
+        console.warn('⚠️ Custom signout failed, but standard signout succeeded:', customError);
+      }
+      
+      // Finally redirect to login
+      window.location.href = '/login';
+      
+    } catch (error) {
+      console.error('❌ Signout error:', error);
+      
+      // Fallback: try custom signout endpoint
+      try {
+        await fetch('/api/auth/signout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        console.log('✅ Fallback signout successful');
+      } catch (fallbackError) {
+        console.error('❌ Fallback signout also failed:', fallbackError);
+      }
+      
+      // Force redirect to login
+      window.location.href = '/login';
+    }
   };
 
   const navigation = [

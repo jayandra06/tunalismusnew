@@ -27,7 +27,16 @@ export async function GET(req) {
       }
     }
     
+    console.log('🔍 Trainer Stats Auth Debug:', {
+      userId,
+      userRole,
+      hasHeaders: !!req.headers.get("X-User-Role"),
+      allHeaders: Object.fromEntries(req.headers.entries()),
+      authorizeResult: authorize("trainer", userRole)
+    });
+    
     if (!authorize("trainer", userRole)) {
+      console.log('❌ Authorization failed for trainer stats:', { userRole, requiredRole: 'trainer' });
       return NextResponse.json({ message: "Trainer access required" }, { status: 403 });
     }
 
