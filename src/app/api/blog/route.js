@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import Blog from '@/models/Blog';
-import { connectDB } from '@/lib/mongodb';
+import { connectToDB } from '@/lib/mongodb';
 import { 
   uploadFile, 
   uploadFileWithProgress, 
@@ -20,7 +20,7 @@ import {
 // GET /api/blog - Get all published blog posts with filtering
 export async function GET(request) {
   try {
-    await connectDB();
+    await connectToDB();
     
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page')) || 1;
@@ -99,7 +99,7 @@ export async function POST(request) {
       );
     }
     
-    await connectDB();
+    await connectToDB();
     
     const formData = await request.formData();
     const data = Object.fromEntries(formData.entries());

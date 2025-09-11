@@ -190,7 +190,7 @@ const blogSchema = new mongoose.Schema({
 });
 
 // Indexes for better performance
-blogSchema.index({ slug: 1 });
+// Note: slug index is automatically created by unique: true
 blogSchema.index({ published: 1, publishedAt: -1 });
 blogSchema.index({ category: 1 });
 blogSchema.index({ language: 1 });

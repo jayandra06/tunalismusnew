@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import Blog from '@/models/Blog';
-import { connectDB } from '@/lib/mongodb';
+import { connectToDB } from '@/lib/mongodb';
 import { deleteFile } from '@/lib/firebase-storage';
 
 // GET /api/admin/blog/[id] - Get single blog post for admin
@@ -17,7 +17,7 @@ export async function GET(request, { params }) {
       );
     }
     
-    await connectDB();
+    await connectToDB();
     
     const { id } = params;
     
@@ -58,7 +58,7 @@ export async function PUT(request, { params }) {
       );
     }
     
-    await connectDB();
+    await connectToDB();
     
     const { id } = params;
     const body = await request.json();
@@ -120,7 +120,7 @@ export async function DELETE(request, { params }) {
       );
     }
     
-    await connectDB();
+    await connectToDB();
     
     const { id } = params;
     

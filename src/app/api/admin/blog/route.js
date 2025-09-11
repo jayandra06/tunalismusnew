@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import Blog from '@/models/Blog';
-import { connectDB } from '@/lib/mongodb';
+import { connectToDB } from '@/lib/mongodb';
 
 // GET /api/admin/blog - Get all blog posts for admin (including drafts)
 export async function GET(request) {
@@ -16,7 +16,7 @@ export async function GET(request) {
       );
     }
     
-    await connectDB();
+    await connectToDB();
     
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page')) || 1;

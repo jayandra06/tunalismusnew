@@ -16,8 +16,7 @@ import {
   Shield,
   UserCheck,
   Layers,
-  Megaphone,
-  Ad
+  Megaphone
 } from "lucide-react";
 import Link from "next/link";
 
@@ -84,7 +83,7 @@ export default function AdminLayout({ children }) {
       name: "Marketing", 
       icon: Megaphone,
       children: [
-        { name: "Homepage Ads", href: "/admin/marketing/homepage-ads", icon: Ad }
+        { name: "Homepage Ads", href: "/admin/marketing/homepage-ads", icon: Megaphone }
       ]
     },
     { name: "Settings", href: "/admin/settings", icon: Settings },

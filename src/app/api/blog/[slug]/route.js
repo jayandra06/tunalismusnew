@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import Blog from '@/models/Blog';
-import { connectDB } from '@/lib/mongodb';
+import { connectToDB } from '@/lib/mongodb';
 
 // GET /api/blog/[slug] - Get single blog post by slug
 export async function GET(request, { params }) {
   try {
-    await connectDB();
+    await connectToDB();
     
     const { slug } = params;
     
@@ -69,7 +69,7 @@ export async function PUT(request, { params }) {
       );
     }
     
-    await connectDB();
+    await connectToDB();
     
     const { slug } = params;
     const formData = await request.formData();
@@ -232,7 +232,7 @@ export async function DELETE(request, { params }) {
       );
     }
     
-    await connectDB();
+    await connectToDB();
     
     const { slug } = params;
     

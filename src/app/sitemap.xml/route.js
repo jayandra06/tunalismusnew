@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import Blog from '@/models/Blog';
-import { connectDB } from '@/lib/mongodb';
+import { connectToDB } from '@/lib/mongodb';
 
 export async function GET() {
   try {
-    await connectDB();
+    await connectToDB();
     
     // Get all published blog posts
     const blogPosts = await Blog.find({ published: true })
