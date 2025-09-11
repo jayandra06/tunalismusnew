@@ -664,7 +664,7 @@ export default function HomePage() {
               <div className="space-y-2 text-gray-300">
                 <p>📍 Hyderabad, India</p>
                 <p>📧 contact@tunalismus.com</p>
-                <p>📞 +91 98765 43210</p>
+                <p>📞 +91 80196 82031</p>
                 <p>🌐 www.tunalismus.com</p>
               </div>
             </div>
