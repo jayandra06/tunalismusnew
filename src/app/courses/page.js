@@ -20,11 +20,76 @@ import {
   BookOpen
 } from 'lucide-react';
 import Navbar from '@/components/system/navbar';
+import Head from 'next/head';
+
+export const metadata = {
+  title: "Language Courses - German, Turkish & English Classes",
+  description: "Discover our comprehensive language learning programs in German, Turkish, and English. Expert-led courses designed to help you achieve fluency and connect with cultures around the world.",
+  keywords: [
+    "German courses",
+    "Turkish courses", 
+    "English courses",
+    "Language classes Hyderabad",
+    "Online language learning",
+    "Language tutor",
+    "German A1 A2 B1 B2",
+    "Turkish language classes",
+    "English conversation classes",
+    "Language immersion",
+    "Cultural learning"
+  ],
+  openGraph: {
+    title: "Language Courses - German, Turkish & English Classes | Tunalismus",
+    description: "Expert-led language courses in German, Turkish, and English. Achieve fluency through personalized learning experiences in Hyderabad, India.",
+    url: "https://tunalismus.in/courses",
+    images: [
+      {
+        url: "/og-courses.png",
+        width: 1200,
+        height: 630,
+        alt: "Language Courses - Tunalismus",
+      },
+    ],
+  },
+  alternates: {
+    canonical: "https://tunalismus.in/courses",
+  },
+};
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Structured data for courses
+  const coursesStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Language Courses",
+    "description": "Comprehensive language learning programs in German, Turkish, and English",
+    "url": "https://tunalismus.in/courses",
+    "numberOfItems": courses.length,
+    "itemListElement": courses.map((course, index) => ({
+      "@type": "Course",
+      "position": index + 1,
+      "name": course.name || course.displayName,
+      "description": course.description,
+      "provider": {
+        "@type": "EducationalOrganization",
+        "name": "Tunalismus",
+        "url": "https://tunalismus.in"
+      },
+      "courseMode": "blended",
+      "educationalLevel": course.level,
+      "inLanguage": course.language,
+      "offers": {
+        "@type": "Offer",
+        "price": course.price,
+        "priceCurrency": "INR",
+        "availability": course.status === 'active' ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+      }
+    }))
+  };
   
   // Filter and search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -232,6 +297,12 @@ export default function CoursesPage() {
 
   return (
     <>
+      <Head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(coursesStructuredData) }}
+        />
+      </Head>
       <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-800 pt-20">
         <div className="container mx-auto px-4 py-12">

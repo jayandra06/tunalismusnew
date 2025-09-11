@@ -17,7 +17,7 @@ import {
   UserCheck,
   Layers,
   Megaphone,
-  Monitor
+  Ad
 } from "lucide-react";
 import Link from "next/link";
 
@@ -84,7 +84,7 @@ export default function AdminLayout({ children }) {
       name: "Marketing", 
       icon: Megaphone,
       children: [
-        { name: "Homepage Ads", href: "/admin/marketing/homepage-ads", icon: Monitor }
+        { name: "Homepage Ads", href: "/admin/marketing/homepage-ads", icon: Ad }
       ]
     },
     { name: "Settings", href: "/admin/settings", icon: Settings },
@@ -148,7 +148,7 @@ export default function AdminLayout({ children }) {
                 return (
                   <div key={item.name} className="space-y-1">
                     <div className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-                      {Icon && <Icon className="h-5 w-5 mr-3" />}
+                      <Icon className="h-5 w-5 mr-3" />
                       {item.name}
                     </div>
                     <div className="ml-6 space-y-1">
@@ -160,7 +160,7 @@ export default function AdminLayout({ children }) {
                             href={child.href}
                             className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                           >
-                            {ChildIcon && <ChildIcon className="h-4 w-4 mr-3" />}
+                            <ChildIcon className="h-4 w-4 mr-3" />
                             {child.name}
                           </Link>
                         );
@@ -210,7 +210,7 @@ export default function AdminLayout({ children }) {
                 return (
                   <div key={item.name} className="space-y-1">
                     <div className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-                      {Icon && <Icon className="h-5 w-5 mr-3" />}
+                      <Icon className="h-5 w-5 mr-3" />
                       {item.name}
                     </div>
                     <div className="ml-6 space-y-1">
@@ -222,7 +222,7 @@ export default function AdminLayout({ children }) {
                             href={child.href}
                             className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                           >
-                            {ChildIcon && <ChildIcon className="h-4 w-4 mr-3" />}
+                            <ChildIcon className="h-4 w-4 mr-3" />
                             {child.name}
                           </Link>
                         );

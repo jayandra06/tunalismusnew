@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { connectToDB } from "@/lib/mongodb";
 import HomepageAd from "@/models/HomepageAd";
+import Course from "@/models/Course";
 
 // GET /api/homepage-ads - Get active ads for current user
 export async function GET(request) {
