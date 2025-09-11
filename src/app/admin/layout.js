@@ -15,7 +15,9 @@ import {
   X,
   Shield,
   UserCheck,
-  Layers
+  Layers,
+  Megaphone,
+  Monitor
 } from "lucide-react";
 import Link from "next/link";
 
@@ -78,6 +80,13 @@ export default function AdminLayout({ children }) {
     { name: "Batches", href: "/admin/batches", icon: Layers },
     { name: "Enrollments", href: "/admin/enrollments", icon: UserCheck },
     { name: "Payments", href: "/admin/payments", icon: CreditCard },
+    { 
+      name: "Marketing", 
+      icon: Megaphone,
+      children: [
+        { name: "Homepage Ads", href: "/admin/marketing/homepage-ads", icon: Monitor }
+      ]
+    },
     { name: "Settings", href: "/admin/settings", icon: Settings },
   ];
 
@@ -134,6 +143,33 @@ export default function AdminLayout({ children }) {
           <nav className="flex-1 px-4 py-4 space-y-2">
             {navigation.map((item) => {
               const Icon = item.icon;
+              
+              if (item.children) {
+                return (
+                  <div key={item.name} className="space-y-1">
+                    <div className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {Icon && <Icon className="h-5 w-5 mr-3" />}
+                      {item.name}
+                    </div>
+                    <div className="ml-6 space-y-1">
+                      {item.children.map((child) => {
+                        const ChildIcon = child.icon;
+                        return (
+                          <Link
+                            key={child.name}
+                            href={child.href}
+                            className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                          >
+                            {ChildIcon && <ChildIcon className="h-4 w-4 mr-3" />}
+                            {child.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+              
               return (
                 <Link
                   key={item.name}
@@ -169,6 +205,33 @@ export default function AdminLayout({ children }) {
           <nav className="flex-1 px-4 py-4 space-y-2">
             {navigation.map((item) => {
               const Icon = item.icon;
+              
+              if (item.children) {
+                return (
+                  <div key={item.name} className="space-y-1">
+                    <div className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {Icon && <Icon className="h-5 w-5 mr-3" />}
+                      {item.name}
+                    </div>
+                    <div className="ml-6 space-y-1">
+                      {item.children.map((child) => {
+                        const ChildIcon = child.icon;
+                        return (
+                          <Link
+                            key={child.name}
+                            href={child.href}
+                            className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                          >
+                            {ChildIcon && <ChildIcon className="h-4 w-4 mr-3" />}
+                            {child.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+              
               return (
                 <Link
                   key={item.name}

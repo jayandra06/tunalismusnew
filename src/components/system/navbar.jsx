@@ -111,7 +111,7 @@ function NavLink({ data, isActive, setSelectedIndicator }) {
 }
 
 // Full slide menu
-function NavMenu({ activePath }) {
+function NavMenu({ activePath, onClose }) {
     const [selectedIndicator, setSelectedIndicator] = useState(activePath);
 
     return (
@@ -122,6 +122,31 @@ function NavMenu({ activePath }) {
             exit="exit"
             className="h-screen bg-[var(--color-muted-green)] fixed right-0 top-0 text-white z-[9999]"
         >
+            {/* Close button */}
+            <button
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Close button clicked');
+                    onClose();
+                }}
+                className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center text-white hover:text-[var(--color-dusty-rose)] transition-colors duration-200 cursor-pointer z-50 bg-black/20 hover:bg-black/40 rounded-full"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    stroke="currentColor"
+                    className="w-6 h-6"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                    />
+                </svg>
+            </button>
             <div className="box-border h-full p-24 flex flex-col justify-between">
                 <div
                     onMouseLeave={() => setSelectedIndicator(activePath)}
@@ -191,6 +216,11 @@ export default function Navbar() {
         setScrolled(latest > halfViewport);
     });
 
+    // Debug isActive state changes
+    useEffect(() => {
+        console.log('isActive state changed to:', isActive);
+    }, [isActive]);
+
 
     return (
         <>
@@ -206,7 +236,7 @@ export default function Navbar() {
                                 href="/courses"
                                 className={`relative ${scrolled ? "text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white" : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-400 dark:hover:text-zinc-300"} transition-colors duration-300 group`}
                             >
-                                <span className="relative z-10">Courses</span>
+                                <span className="relative z-10 invisible">Courses</span>
                                 <span className={`absolute bottom-0 left-0 w-0 h-px ${scrolled ? "bg-zinc-900 dark:bg-white" : "bg-zinc-100 dark:bg-zinc-300"} transition-all duration-300 group-hover:w-full`}></span>
                             </Link>
                         </div>
@@ -239,7 +269,10 @@ export default function Navbar() {
                             transition={{ duration: 0.3 }}
                         >
                             <button
-                                onClick={() => setIsActive(!isActive)}
+                                onClick={() => {
+                                    console.log('Menu button clicked, current isActive:', isActive);
+                                    setIsActive(!isActive);
+                                }}
                                 className={`w-full ${scrolled ? "bg-[var(--color-muted-green)] text-white dark:bg-[var(--color-muted-green-dark)]" : "bg-white dark:bg-zinc-800 text-black dark:text-white"} rounded-full px-4 py-2 flex items-center justify-center transition-all duration-300 cursor-pointer`}
                             >
                                 <svg
@@ -265,8 +298,11 @@ export default function Navbar() {
             </motion.header>
 
             {/* Animated menu */}
-            <AnimatePresence mode="wait">
-                {isActive && <NavMenu activePath="/" />}
+            <AnimatePresence>
+                {isActive && <NavMenu activePath="/" onClose={() => {
+                    console.log('Close function called, setting isActive to false');
+                    setIsActive(false);
+                }} />}
             </AnimatePresence>
         </>
     );

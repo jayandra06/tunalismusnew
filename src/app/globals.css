@@ -48,6 +48,102 @@
   --color-dusty-rose: #fb8500;
 }
 
+/* Homepage Ads Animations */
+.homepage-ad {
+  transition: all var(--animation-duration, 300ms) ease-in-out;
+}
+
+.ad-hidden {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.ad-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Fade In Animation */
+.ad-fade_in.ad-hidden {
+  opacity: 0;
+  transform: scale(1);
+}
+
+.ad-fade_in.ad-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Slide In Animation */
+.ad-slide_in.ad-hidden {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.ad-slide_in.ad-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Bounce Animation */
+.ad-bounce.ad-hidden {
+  opacity: 0;
+  transform: scale(0.3);
+}
+
+.ad-bounce.ad-visible {
+  opacity: 1;
+  transform: scale(1);
+  animation: bounceIn 0.6s ease-out;
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Zoom In Animation */
+.ad-zoom_in.ad-hidden {
+  opacity: 0;
+  transform: scale(0);
+}
+
+.ad-zoom_in.ad-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* No Animation */
+.ad-none.ad-hidden,
+.ad-none.ad-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Responsive adjustments for ads */
+@media (max-width: 768px) {
+  .homepage-ad {
+    max-width: calc(100vw - 2rem);
+  }
+  
+  .ad-slide_in.ad-hidden {
+    transform: translateY(100%);
+  }
+}
+
 :root {
 
   --radius: 0.625rem;

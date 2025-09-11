@@ -50,6 +50,8 @@ export async function middleware(req) {
     "/api/debug-session",
     "/api/test-db",
     "/api/test-session",
+    "/api/test-homepage-ads",
+    "/api/homepage-ads",
   ];
 
   // Allow public paths - return early without any processing

@@ -331,24 +331,28 @@ export default function HomePage() {
                 excerpt: "Simple yet powerful daily routines that native speakers use to maintain fluency and continue growing their vocabulary.",
                 category: "Learning Tips",
                 readTime: "7 min read",
-                image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop"
+                image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop",
+                slug: "daily-habits-transform-language-skills"
               },
               {
                 title: "Cultural Context: Why Grammar Rules Aren't Everything",
                 excerpt: "Understanding the cultural nuances behind language use and how context shapes meaning in real conversations.",
                 category: "Cultural Insights",
                 readTime: "5 min read",
-                image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=400&h=250&fit=crop"
+                image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=400&h=250&fit=crop",
+                slug: "cultural-context-grammar-rules"
               },
               {
                 title: "From Beginner to Conversational in 90 Days",
                 excerpt: "A structured approach to reaching conversational level quickly while building solid foundations for long-term success.",
                 category: "Study Plans",
                 readTime: "10 min read",
-                image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=250&fit=crop"
+                image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=250&fit=crop",
+                slug: "beginner-to-conversational-90-days"
               }
             ].map((article, index) => (
-              <article key={index} className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl dark:hover:shadow-zinc-700/50 transition-all duration-300 group cursor-pointer">
+              <Link key={index} href={`/blog/${article.slug}`}>
+                <article className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl dark:hover:shadow-zinc-700/50 transition-all duration-300 group cursor-pointer">
                 <div className="relative overflow-hidden">
                   <img
                     src={article.image}
@@ -379,16 +383,17 @@ export default function HomePage() {
                   </div>
                 </div>
               </article>
+              </Link>
             ))}
           </div>
 
           <div className="text-center mt-12">
-            <a href="/blog" className="inline-flex items-center px-8 py-4 bg-zinc-950 dark:bg-zinc-700 text-white rounded-full font-semibold hover:bg-zinc-950/90 dark:hover:bg-zinc-600 transition-colors duration-300">
+            <Link href="/blog" className="inline-flex items-center px-8 py-4 bg-zinc-950 dark:bg-zinc-700 text-white rounded-full font-semibold hover:bg-zinc-950/90 dark:hover:bg-zinc-600 transition-colors duration-300">
               View All Articles
               <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
-            </a>
+            </Link>
           </div>
         </div>
       </section>

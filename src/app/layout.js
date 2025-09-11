@@ -2,6 +2,7 @@ import { Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 import NextAuthSessionProvider from "@/components/providers/session-provider";
+import { Toaster } from "sonner";
 import Script from "next/script";
 
 const bricolage = Bricolage_Grotesque({
@@ -62,6 +63,7 @@ export default function RootLayout({ children }) {
         >
           <NextAuthSessionProvider>
             {children}
+            <Toaster position="top-right" richColors />
           </NextAuthSessionProvider>
         </ThemeProvider>
       </body>
