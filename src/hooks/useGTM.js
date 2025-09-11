@@ -12,9 +12,12 @@ export const useGTMPageView = (pageTitle = '') => {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Track page view when pathname changes
-    const title = pageTitle || document.title || 'Tunalismus';
-    trackPageView(pathname, title);
+    // Only track on client side
+    if (typeof window !== 'undefined') {
+      // Track page view when pathname changes
+      const title = pageTitle || document.title || 'Tunalismus';
+      trackPageView(pathname, title);
+    }
   }, [pathname, pageTitle]);
 };
 
