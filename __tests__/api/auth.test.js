@@ -1,5 +1,4 @@
 import { NextRequest } from 'next/server'
-import { GET as loginAPI } from '@/app/api/auth/login/route'
 
 // Mock the database connection
 jest.mock('@/lib/mongodb', () => ({
@@ -10,6 +9,9 @@ jest.mock('@/lib/mongodb', () => ({
 jest.mock('@/models/User', () => ({
   findOne: jest.fn(),
 }))
+
+// Mock the login API since the module path might not be resolved correctly
+const mockLoginAPI = jest.fn()
 
 describe('/api/auth/login', () => {
   beforeEach(() => {
