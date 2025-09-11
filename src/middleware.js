@@ -90,6 +90,18 @@ export async function middleware(req) {
       return NextResponse.next();
     }
     
+    // Special case: Allow POST requests to /api/payments/order for course enrollment
+    if (pathname === "/api/payments/order" && req.method === "POST") {
+      console.log('✅ Allowing public POST request to:', pathname);
+      return NextResponse.next();
+    }
+    
+    // Special case: Allow POST requests to /api/payments/verify for Razorpay webhooks
+    if (pathname === "/api/payments/verify" && req.method === "POST") {
+      console.log('✅ Allowing public POST request to:', pathname);
+      return NextResponse.next();
+    }
+    
     if (!token) {
       console.log('❌ No token found for API route:', pathname);
       console.log('🔍 Available cookies:', req.cookies.getAll().map(c => c.name));
