@@ -84,9 +84,9 @@ export async function middleware(req) {
       allCookies: req.cookies.getAll().map(c => ({ name: c.name, hasValue: !!c.value }))
     });
     
-    // Special case: Allow GET requests to /api/courses without authentication
-    if (pathname === "/api/courses" && req.method === "GET") {
-      console.log('✅ Allowing public GET request to /api/courses');
+    // Special case: Allow GET requests to /api/courses and /api/courses/[courseId] without authentication
+    if (pathname.startsWith("/api/courses") && req.method === "GET") {
+      console.log('✅ Allowing public GET request to:', pathname);
       return NextResponse.next();
     }
     
