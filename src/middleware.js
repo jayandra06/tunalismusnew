@@ -84,6 +84,12 @@ export async function middleware(req) {
       allCookies: req.cookies.getAll().map(c => ({ name: c.name, hasValue: !!c.value }))
     });
     
+    // Special case: Allow GET requests to /api/courses without authentication
+    if (pathname === "/api/courses" && req.method === "GET") {
+      console.log('✅ Allowing public GET request to /api/courses');
+      return NextResponse.next();
+    }
+    
     if (!token) {
       console.log('❌ No token found for API route:', pathname);
       console.log('🔍 Available cookies:', req.cookies.getAll().map(c => c.name));
