@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const robotsTxt = `User-agent: *
+  const robotsTxt = `# Robots.txt for Tunalismus - Language Learning Platform
+# Updated: ${new Date().toISOString().split('T')[0]}
+
+# Default rules for all bots
+User-agent: *
 Allow: /
 
 # Disallow admin and private areas
@@ -11,32 +15,52 @@ Disallow: /trainer/
 Disallow: /student/
 Disallow: /login
 Disallow: /register
+Disallow: /signup
 Disallow: /dashboard/
+Disallow: /unauthorized
+Disallow: /_next/
+Disallow: /static/
 
-# Allow important pages
+# Disallow search and filter parameters
+Disallow: /*?*
+Disallow: /*&*
+
+# Allow important pages and content
 Allow: /courses/
 Allow: /blog/
 Allow: /about
 Allow: /contact
 Allow: /resources
+Allow: /materials/
+Allow: /enroll/
+Allow: /payment-success/
 
-# Sitemap location (Dynamic)
-Sitemap: https://tunalismus.in/sitemap.xml
-
-# Crawl delay (optional)
-Crawl-delay: 1
-
-# Additional directives for better SEO
+# Specific bot instructions
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Slurp
 Allow: /
+Crawl-delay: 1
 
-# Block bad bots
+User-agent: DuckDuckBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 2
+
+User-agent: YandexBot
+Allow: /
+Crawl-delay: 1
+
+# Block aggressive crawlers and scrapers
 User-agent: AhrefsBot
 Disallow: /
 
@@ -44,7 +68,26 @@ User-agent: MJ12bot
 Disallow: /
 
 User-agent: DotBot
-Disallow: /`;
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MajesticSEO
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+# Sitemap locations
+Sitemap: https://tunalismus.in/sitemap.xml
+Sitemap: https://tunalismus.in/sitemap-index.xml
+
+# Host directive (helps with canonical URLs)
+Host: https://tunalismus.in`;
 
   return new NextResponse(robotsTxt, {
     status: 200,
