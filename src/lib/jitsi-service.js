@@ -3,7 +3,7 @@
  * Handles Jitsi Meet integration for batch classes
  */
 
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 class JitsiService {
   constructor() {

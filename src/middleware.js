@@ -6,6 +6,11 @@ export async function middleware(req) {
   
   console.log('🔍 Middleware triggered for:', pathname, 'Method:', req.method);
   
+  // Special debug for API routes
+  if (pathname.startsWith("/api/")) {
+    console.log('🚨 API ROUTE DETECTED IN MIDDLEWARE:', pathname);
+  }
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new NextResponse(null, {
@@ -47,8 +52,15 @@ export async function middleware(req) {
     "/api/test-session",
   ];
 
-  // Allow public paths
+  // Allow public paths - return early without any processing
   if (publicPaths.some(path => pathname.startsWith(path))) {
+    console.log('✅ Allowing public path:', pathname);
+    return NextResponse.next();
+  }
+
+  // Allow all NextAuth routes
+  if (pathname.startsWith('/api/auth/')) {
+    console.log('✅ Allowing NextAuth route:', pathname);
     return NextResponse.next();
   }
 
@@ -157,11 +169,6 @@ export async function middleware(req) {
 
 export const config = {
   matcher: [
-    "/api/((?!auth).)*", 
-    "/admin/:path*", 
-    "/trainer/:path*", 
-    "/student/:path*",
-    "/login/:path*",
-    "/signup/:path*"
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };

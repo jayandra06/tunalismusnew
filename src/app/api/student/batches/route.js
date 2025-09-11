@@ -80,7 +80,7 @@ export async function GET(req) {
         }
 
         // Get meeting information
-        const jitsiService = require("../../../../lib/jitsi-service").default;
+        const jitsiService = (await import("../../../../lib/jitsi-service")).default;
         const meetingInfo = jitsiService.getMeetingInfo(batch._id.toString(), displayName);
         
         // Generate meeting URL for student
@@ -89,7 +89,7 @@ export async function GET(req) {
           email: req.headers.get("X-User-Email") || "student@example.com"
         };
         
-        const meetingUrl = batch.getJitsiMeetingUrl(student, 'student');
+        const meetingUrl = await batch.getJitsiMeetingUrl(student, 'student');
 
         return {
           ...batch.toObject(),

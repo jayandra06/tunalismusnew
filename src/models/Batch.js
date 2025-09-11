@@ -211,10 +211,10 @@ batchSchema.methods.isCompleted = function() {
 };
 
 // Method to initialize Jitsi meeting for batch
-batchSchema.methods.initializeJitsiMeeting = function() {
+batchSchema.methods.initializeJitsiMeeting = async function() {
   try {
     // Import jitsi service dynamically
-    const jitsiService = require('../lib/jitsi-service').default;
+    const jitsiService = (await import('../lib/jitsi-service')).default;
     const meetingInfo = jitsiService.getMeetingInfo(this._id.toString(), this.name);
     
     this.jitsiMeeting.roomName = meetingInfo.roomName;
@@ -248,12 +248,12 @@ batchSchema.methods.initializeJitsiMeeting = function() {
 };
 
 // Method to get Jitsi meeting URL for a user
-batchSchema.methods.getJitsiMeetingUrl = function(user, userRole) {
+batchSchema.methods.getJitsiMeetingUrl = async function(user, userRole) {
   try {
-    const jitsiService = require('../lib/jitsi-service').default;
+    const jitsiService = (await import('../lib/jitsi-service')).default;
     
     if (!this.jitsiMeeting.roomName) {
-      this.initializeJitsiMeeting();
+      await this.initializeJitsiMeeting();
     }
     
     switch (userRole) {
