@@ -9,6 +9,7 @@
     "seed": "node seed-accounts.js",
     "clear-seed": "node clear-and-seed-db.js",
     "seed-complete": "node seed-complete-data.js",
+    "clear-data": "node clear-data-keep-users.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
