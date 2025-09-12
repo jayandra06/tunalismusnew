@@ -70,9 +70,12 @@ export default function TrainerLayout({ children }) {
     try {
       console.log('🔓 Initiating signout...');
       
+      // Set a flag to indicate we're signing out
+      sessionStorage.setItem('justSignedOut', 'true');
+      
       // First try the standard NextAuth signout
       await signOut({ 
-        callbackUrl: '/login',
+        callbackUrl: '/trainer/login?from=signout',
         redirect: false // Don't redirect automatically, we'll handle it
       });
       
@@ -87,11 +90,18 @@ export default function TrainerLayout({ children }) {
         console.warn('⚠️ Custom signout failed, but standard signout succeeded:', customError);
       }
       
-      // Finally redirect to login
-      window.location.href = '/login';
+      // Clear any local storage that might contain auth data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Finally redirect to trainer login with signout flag
+      window.location.href = '/trainer/login?from=signout';
       
     } catch (error) {
       console.error('❌ Signout error:', error);
+      
+      // Set the flag even if there's an error
+      sessionStorage.setItem('justSignedOut', 'true');
       
       // Fallback: try custom signout endpoint
       try {
@@ -104,8 +114,12 @@ export default function TrainerLayout({ children }) {
         console.error('❌ Fallback signout also failed:', fallbackError);
       }
       
-      // Force redirect to login
-      window.location.href = '/login';
+      // Clear local storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Force redirect to trainer login with signout flag
+      window.location.href = '/trainer/login?from=signout';
     }
   };
 

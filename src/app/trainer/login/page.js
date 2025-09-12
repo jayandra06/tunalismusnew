@@ -46,6 +46,18 @@ export default function TrainerLoginPage() {
       return; // Wait for component to mount and auth to load
     }
     
+    // Check if we're coming from a signout (check URL params or referrer)
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromSignout = urlParams.get('from') === 'signout' || 
+                       document.referrer.includes('/trainer/') ||
+                       sessionStorage.getItem('justSignedOut') === 'true';
+    
+    if (fromSignout) {
+      console.log('🔓 Coming from signout, clearing session storage and showing login form');
+      sessionStorage.removeItem('justSignedOut');
+      return; // Don't redirect, show login form
+    }
+    
     // Redirect if user is already authenticated and is trainer
     if (session && session.user?.role === 'trainer') {
       console.log('✅ Trainer user detected, redirecting to dashboard');

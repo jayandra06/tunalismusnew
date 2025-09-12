@@ -48,8 +48,61 @@ export default function StudentLayout({ children }) {
     }
   }, [session, status, router, isLoginPage]);
 
-  const handleLogout = () => {
-    signOut({ callbackUrl: '/' });
+  const handleLogout = async () => {
+    try {
+      console.log('🔓 Initiating student signout...');
+      
+      // Set a flag to indicate we're signing out
+      sessionStorage.setItem('justSignedOut', 'true');
+      
+      // First try the standard NextAuth signout
+      await signOut({ 
+        callbackUrl: '/student/login?from=signout',
+        redirect: false // Don't redirect automatically, we'll handle it
+      });
+      
+      // Then call our custom signout endpoint to ensure cookies are cleared
+      try {
+        await fetch('/api/auth/signout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        console.log('✅ Custom signout successful');
+      } catch (customError) {
+        console.warn('⚠️ Custom signout failed, but standard signout succeeded:', customError);
+      }
+      
+      // Clear any local storage that might contain auth data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Finally redirect to student login with signout flag
+      window.location.href = '/student/login?from=signout';
+      
+    } catch (error) {
+      console.error('❌ Signout error:', error);
+      
+      // Set the flag even if there's an error
+      sessionStorage.setItem('justSignedOut', 'true');
+      
+      // Fallback: try custom signout endpoint
+      try {
+        await fetch('/api/auth/signout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        console.log('✅ Fallback signout successful');
+      } catch (fallbackError) {
+        console.error('❌ Fallback signout also failed:', fallbackError);
+      }
+      
+      // Clear local storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Force redirect to student login with signout flag
+      window.location.href = '/student/login?from=signout';
+    }
   };
 
   const navigation = [

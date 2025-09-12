@@ -46,6 +46,18 @@ export default function AdminLoginPage() {
       return; // Wait for component to mount and auth to load
     }
     
+    // Check if we're coming from a signout (check URL params or referrer)
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromSignout = urlParams.get('from') === 'signout' || 
+                       document.referrer.includes('/admin/') ||
+                       sessionStorage.getItem('justSignedOut') === 'true';
+    
+    if (fromSignout) {
+      console.log('🔓 Coming from signout, clearing session storage and showing login form');
+      sessionStorage.removeItem('justSignedOut');
+      return; // Don't redirect, show login form
+    }
+    
     // Redirect if user is already authenticated and is admin
     if (session && session.user?.role === 'admin') {
       console.log('✅ Admin user detected, redirecting to dashboard');

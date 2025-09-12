@@ -68,8 +68,61 @@ export default function AdminLayout({ children }) {
     console.log('✅ Admin access granted, rendering dashboard');
   }, [isClient, status, session, router, pathname]);
 
-  const handleLogout = () => {
-    signOut({ callbackUrl: '/login' });
+  const handleLogout = async () => {
+    try {
+      console.log('🔓 Initiating admin signout...');
+      
+      // Set a flag to indicate we're signing out
+      sessionStorage.setItem('justSignedOut', 'true');
+      
+      // First try the standard NextAuth signout
+      await signOut({ 
+        callbackUrl: '/admin/login?from=signout',
+        redirect: false // Don't redirect automatically, we'll handle it
+      });
+      
+      // Then call our custom signout endpoint to ensure cookies are cleared
+      try {
+        await fetch('/api/auth/signout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        console.log('✅ Custom signout successful');
+      } catch (customError) {
+        console.warn('⚠️ Custom signout failed, but standard signout succeeded:', customError);
+      }
+      
+      // Clear any local storage that might contain auth data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Finally redirect to admin login with signout flag
+      window.location.href = '/admin/login?from=signout';
+      
+    } catch (error) {
+      console.error('❌ Signout error:', error);
+      
+      // Set the flag even if there's an error
+      sessionStorage.setItem('justSignedOut', 'true');
+      
+      // Fallback: try custom signout endpoint
+      try {
+        await fetch('/api/auth/signout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        console.log('✅ Fallback signout successful');
+      } catch (fallbackError) {
+        console.error('❌ Fallback signout also failed:', fallbackError);
+      }
+      
+      // Clear local storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Force redirect to admin login with signout flag
+      window.location.href = '/admin/login?from=signout';
+    }
   };
 
   const navigation = [

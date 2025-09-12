@@ -24,7 +24,9 @@ export async function POST(req) {
       'next-auth.callback-url', 
       'next-auth.csrf-token',
       '__Secure-next-auth.session-token',
-      '__Host-next-auth.csrf-token'
+      '__Host-next-auth.csrf-token',
+      '__Secure-next-auth.callback-url',
+      '__Host-next-auth.callback-url'
     ];
 
     cookiesToClear.forEach(cookieName => {
@@ -46,6 +48,18 @@ export async function POST(req) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax'
       });
+      
+      // Clear cookie with .tunalismus.in domain (production)
+      if (process.env.NODE_ENV === 'production') {
+        response.cookies.set(cookieName, '', {
+          expires: new Date(0),
+          path: '/',
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          domain: '.tunalismus.in'
+        });
+      }
     });
 
     console.log('✅ All cookies cleared');
